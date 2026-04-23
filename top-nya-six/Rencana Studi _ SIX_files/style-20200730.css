@@ -1,0 +1,184 @@
+body {
+    padding-top: 70px;
+    font-family: 'Roboto', sans-serif;
+    color: black;
+}
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    /*font-family: 'Lato', sans-serif;*/
+    font-weight: 300;
+    color: #036;
+    letter-spacing: 0.2px;
+}
+nav li.dropdown {
+    font-size: 15px;
+}
+.breadcrumb > li + li:before {
+     content: "\00BB";
+}
+.table thead>tr>th.middle-valign,
+.table tbody>tr>th.middle-valign,
+.table tbody>tr>td.middle-valign {
+    vertical-align: middle;
+}
+.table-condensed>tbody>tr>td,
+.table-condensed>tbody>tr>th {
+    padding: 2px;
+    font-size: small;
+    font-family: 'Roboto', sans-serif;
+}
+div.bootstrap-date, div.bootstrap-time {
+    display: inline-block;
+}
+.bootstrap-date select.form-control,
+.bootstrap-time select.form-control {
+    width: initial;
+    display: inline-block;
+}
+.page-header {
+    margin-top: 5px;
+}
+/*.h1, h1 {
+    font-size: 24px;
+}*/
+.panel-heading a:after {
+    font-family:'Glyphicons Halflings';
+    content:"\e114";
+    float: right;
+    color: grey;
+}
+.panel-heading a.collapsed:after {
+    content:"\e080";
+}
+h3.panel-title {
+    font-weight: normal;
+}
+.panel-danger>.panel-heading {
+    background: #a94442;
+    color: white;
+}
+
+.navbar-inverse .navbar-nav>li>a {
+    color: white;
+}
+.form-group label {
+    display: block;
+}
+form.form-horizontal .form-group .statictext {
+    padding-top: 7px;
+    margin-bottom: 0;
+}
+.filter-form label {
+    margin-bottom: 1px;
+}
+.filter-form .form-group {
+    margin-bottom: 5px;
+}
+.filter-form button {
+    margin-top: 20px;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+body {
+    /* Margin bottom by footer height */
+    margin-bottom: 110px;
+}
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    /* Set the fixed height of the footer here */
+    height: 110px;
+    background-color: #f5f5f5;
+}
+.footer a {
+    text-decoration: none;
+}
+.footer > .container {
+    padding-right: 15px;
+    padding-left: 15px;
+}
+.footer h1 {
+    font-size: 28px;
+}
+/*.container .text-muted {
+    margin: 20px 0;
+}*/
+#footer-message {
+    font-weight: normal;
+    font-size: 12px;
+    color: #333;
+}
+@media print {
+    a[href]:after {
+        content: none !important;
+    }
+}
+/*#footer-message dt, #footer-message dd {
+    float: left;
+    display: inline;
+    margin: 0px;
+    padding: 0px;
+    //color: white;
+    font-weight: normal;
+    font-size: 11px;
+}
+#footer-message dt {
+    clear: right;
+}*/
+/*.footer .container div {
+    background: url(https://www.itb.ac.id/themes/default/images/logo-itb.png) no-repeat;
+    padding-left: 100px;
+}*/
+
+.wizard .step {padding: 12px 12px 10px 12px; margin-right:5px; background:#efefef; position:relative; display:inline-block; }
+.wizard .step:before {width:0px; height:0px; border-top: 20px inset transparent; border-bottom: 20px inset transparent; border-left: 20px solid #fff; position: absolute; content: ""; top: 0; left: 0;}
+.wizard .step:after {width:0px; height:0px; border-top: 20px inset transparent; border-bottom: 20px inset transparent; border-left: 20px solid #efefef; position: absolute; content: ""; top: 0; right: -20px; z-index:2;}
+.wizard .step:first-child:before {border:none;}
+.wizard .step:last-child:after {border:none;}
+
+.wizard .step:first-child {-moz-border-radius: 4px 0 0 4px; -webkit-border-radius: 4px 0 0 4px; border-radius:   4px 0 0 4px;}
+.wizard .step:last-child {-moz-border-radius: 0 4px 4px 0; -webkit-border-radius: 0 4px 4px 0; border-radius:   0 4px 4px 0;}
+
+.wizard i {margin:0 5px 0 18px; position:relative; top:-1px;}
+.wizard .step:first-child i {margin-left:0;}
+
+.wizard .current {background:#337ab7; color:#fff;}
+.wizard .current:after {border-left-color:#337ab7;}
+.wizard { margin-bottom: 1em; }
+
+/* https://gist.github.com/matthiasg/6153853 */
+.bs-callout {
+  margin: 20px 0;
+  padding: 15px 30px 15px 15px;
+  border-left: 5px solid #eee;
+}
+.bs-callout h4 {
+  margin-top: 0;
+}
+.bs-callout p:last-child {
+  margin-bottom: 0;
+}
+.bs-callout code,
+.bs-callout .highlight {
+  background-color: #fff;
+}
+
+/* Themes for different contexts */
+.bs-callout-danger {
+  background-color: #fcf2f2;
+  border-color: #dFb5b4;
+}
+.bs-callout-warning {
+  background-color: #fefbed;
+  border-color: #f1e7bc;
+}
+.bs-callout-info {
+  background-color: #f0f7fd;
+  border-color: #d0e3f0;
+}
+.alert {
+    color: #222;
+}
