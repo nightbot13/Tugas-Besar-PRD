@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIX — Parkir</title>
+<!-- Socket.IO client -->
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<style>
+/* ── SIX base ── */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#fff;color:#333;font-size:14px;line-height:1.5;}
+a{color:#2a7abf;text-decoration:none;}a:hover{text-decoration:underline;}
+
+/* TOPNAV */
+.topnav{background:#2b2b2b;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0;height:46px;}
+.topnav-left{display:flex;align-items:center;}
+.nav-brand{color:#fff;font-weight:700;font-size:14px;padding:0 10px 0 80px;height:46px;display:flex;align-items:center;gap:5px;text-decoration:none;}
+.nav-item{color:#ccc;font-size:13px;padding:0 12px;height:46px;display:flex;align-items:center;cursor:pointer;border:none;background:transparent;gap:3px;font-family:inherit;}
+.nav-item:hover{background:rgba(255,255,255,.09);color:#fff;}
+.nav-arrow{font-size:9px;opacity:.75;margin-top:1px;}
+.nav-right{display:flex;align-items:center;height:46px;}
+.nav-divider{width:1px;background:rgba(255,255,255,.15);height:26px;align-self:center;}
+.lang-wrap{display:flex;align-items:center;height:46px;}
+.lang-btn{background:transparent;color:#ccc;border:none;padding:0 11px;height:46px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.3px;}
+.lang-btn.lang-active{background:#111;color:#fff;}
+.user-btn{background:transparent;color:#ccc;border:none;padding:0 80px 0 12px;height:46px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;}
+.user-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+
+/* CONN STATUS BAR */
+.conn-bar{padding:5px 80px;font-size:12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #ddd;transition:background .3s;}
+.conn-bar.ok{background:#eaf4ec;color:#2d5a2d;}
+.conn-bar.off{background:#fce8e6;color:#7a1a1a;}
+.conn-bar.wait{background:#fffde7;color:#5a4000;}
+.conn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.conn-bar.ok .conn-dot{background:#2d6a2d;animation:pulse .8s infinite alternate;}
+.conn-bar.off .conn-dot{background:#c62828;}
+.conn-bar.wait .conn-dot{background:#b45309;}
+@keyframes pulse{from{opacity:1}to{opacity:.3}}
+
+/* BREADCRUMB */
+.breadcrumb{background:#f0f0f0;padding:10px 80px;font-size:12.5px;color:#666;border-bottom:1px solid #ddd;}
+.breadcrumb a{color:#2a7abf;}
+.bc-sep{color:#aaa;margin:0 5px;font-size:11px;}
+
+/* PAGE */
+.page{background:#fff;min-height:calc(100vh - 120px);padding:28px 80px 50px;}
+h1{font-size:34px;font-weight:300;color:#1a2e3d;margin-bottom:6px;letter-spacing:-.3px;}
+.page-subtitle{font-size:13px;color:#888;margin-bottom:22px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid #ccc;margin-bottom:22px;}
+.tab{padding:8px 18px;font-size:13px;cursor:pointer;border:1px solid transparent;border-bottom:none;color:#2a7abf;background:transparent;border-radius:2px 2px 0 0;position:relative;bottom:-1px;font-family:inherit;}
+.tab:hover{background:#f0f7ff;color:#1a5a9a;}
+.tab.active{background:#fff;border-color:#ccc #ccc #fff #ccc;color:#333;font-weight:600;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+
+/* ALERTS */
+.alert{border-radius:3px;padding:10px 15px;font-size:13px;margin-bottom:16px;border:1px solid;}
+.alert-info{background:#eaf4fd;border-color:#bcd8f0;color:#1a4a80;}
+.alert-success{background:#eaf4ec;border-color:#b2d8ba;color:#1a4a2e;}
+.alert-warn{background:#fffde7;border-color:#f5e642;color:#5a4000;}
+.alert-danger{background:#fce8e6;border-color:#f5a5a5;color:#7a1a1a;}
+
+/* PANELS */
+.panel{border:1px solid #c8d8ea;border-radius:3px;margin-bottom:14px;overflow:hidden;}
+.panel-head{background:#3d7ebf;color:#fff;font-size:13px;font-weight:600;padding:9px 14px;}
+.panel-body{background:#fff;padding:14px;}
+.sec-title{font-size:14px;font-weight:600;color:#333;margin:20px 0 10px;border-left:3px solid #2a7abf;padding-left:9px;}
+.sec-title:first-child{margin-top:0;}
+.card{background:#f9f9f9;border:1px solid #dde;border-radius:3px;padding:14px 18px;margin-bottom:14px;}
+
+/* BADGES */
+.badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:10px;display:inline-block;}
+.badge-green{background:#dff0d8;color:#2d6a2d;}
+.badge-red{background:#fce8e6;color:#c62828;}
+.badge-blue{background:#dbe8f7;color:#1a5a9a;}
+.badge-orange{background:#fff3e0;color:#b45309;}
+.badge-gray{background:#ebebeb;color:#555;}
+.badge-purple{background:#f3e8ff;color:#6b21a8;}
+
+/* VEHICLE ROWS */
+.vehicle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee;}
+.vehicle-row:last-child{border-bottom:none;}
+.v-left{display:flex;align-items:center;gap:13px;}
+.plate{background:#1a3a6b;color:#fff;font-weight:700;font-size:11.5px;letter-spacing:2.5px;padding:4px 12px;border-radius:3px;border:2px solid #0d2040;white-space:nowrap;font-family:'Courier New',monospace;}
+.v-meta{font-size:12px;color:#777;margin-top:2px;}
+.v-actions{display:flex;align-items:center;gap:8px;}
+
+/* BUTTONS */
+.btn{border:none;border-radius:3px;padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:background .15s;display:inline-flex;align-items:center;gap:4px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-blue{background:#2a7abf;color:#fff;}
+.btn-blue:not(:disabled):hover{background:#1a5a9a;}
+.btn-outline-blue{background:#fff;border:1px solid #2a7abf;color:#2a7abf;}
+.btn-outline-blue:not(:disabled):hover{background:#eaf4fd;}
+.btn-outline-red{background:#fff;border:1px solid #c62828;color:#c62828;}
+.btn-outline-red:not(:disabled):hover{background:#fce8e6;}
+.btn-link{background:transparent;border:none;color:#2a7abf;font-size:12px;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+
+/* FORMS */
+.form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px;}
+.fg{display:flex;flex-direction:column;gap:3px;}
+.fg label{font-size:12px;color:#555;font-weight:500;}
+.fg input,.fg select{border:1px solid #ccc;border-radius:3px;padding:6px 9px;font-size:13px;color:#333;background:#fff;outline:none;font-family:inherit;}
+.fg input:focus,.fg select:focus{border-color:#2a7abf;box-shadow:0 0 0 2px rgba(42,122,191,.15);}
+.hint{font-size:11.5px;color:#999;margin-top:5px;}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:#4a8ec8;color:#fff;}
+th{text-align:left;padding:9px 13px;font-weight:600;color:#fff;font-size:12.5px;}
+td{padding:9px 13px;border-bottom:1px solid #eee;color:#333;vertical-align:top;}
+tbody tr:hover td{background:#f0f7ff;}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px;}
+.stat-box{background:#fff;border:1px solid #cde;border-radius:3px;padding:14px 16px;text-align:center;}
+.stat-num{font-size:22px;font-weight:700;color:#1a4a80;}
+.stat-lbl{font-size:11.5px;color:#668;margin-top:4px;}
+
+/* STATUS BIG */
+.status-big{display:flex;gap:0;border:1px solid #dde;border-radius:3px;overflow:hidden;margin-bottom:18px;}
+.status-cell{flex:1;padding:14px 16px;border-right:1px solid #dde;}
+.status-cell:last-child{border-right:none;}
+.status-cell .lbl{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.status-cell .val{font-size:15px;font-weight:600;color:#222;}
+.status-cell .sub{font-size:12px;color:#888;margin-top:3px;}
+.status-cell.active-cell{background:#eef7ee;}
+
+/* REALTIME PULSE */
+.pulse-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2d6a4f;animation:pulse .8s infinite alternate;margin-right:5px;}
+.pulse-dot.orange{background:#b45309;}
+
+/* GATE CHIPS */
+.gate-info{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.gate-chip{background:#f9f9f9;border:1px solid #ddd;border-radius:3px;padding:9px 14px;font-size:13px;color:#444;}
+.gate-chip strong{color:#2a7abf;display:block;font-size:12px;font-weight:600;margin-bottom:3px;}
+
+/* E-WALLET */
+.ewallet-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.ew-chip{display:flex;align-items:center;gap:8px;background:#f0f7ff;border:1px solid #c3d9f5;border-radius:3px;padding:7px 12px;}
+.ew-name{font-size:12px;font-weight:600;color:#333;}
+.ew-bal{font-size:11px;color:#2a7abf;}
+.total-row{background:#eaf4fd;border:1px solid #b8d4ef;border-radius:3px;padding:10px 15px;display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;}
+
+/* PROGRESS BAR */
+.progress-bar-bg{background:#dde;border-radius:2px;height:6px;margin-top:8px;}
+.progress-bar{background:#2a7abf;border-radius:2px;height:6px;transition:width .3s;}
+
+/* CALC */
+.calc-result-box{background:#eaf4fd;border:1px solid #b8d4ef;border-radius:3px;padding:12px 15px;margin-top:10px;}
+.calc-main{font-size:22px;font-weight:700;color:#1a4a80;}
+.calc-detail{font-size:12px;color:#558;margin-top:4px;line-height:1.7;}
+
+/* METHOD GRID */
+.method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+.method-card{border:1px solid #dde;border-radius:3px;padding:13px 15px;background:#fff;}
+
+/* REALTIME NOTIFICATION */
+.notif-toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.notif{background:#fff;border:1px solid #ccc;border-radius:5px;padding:12px 16px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.15);display:flex;align-items:flex-start;gap:10px;min-width:280px;max-width:360px;animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+.notif.success{border-left:3px solid #2d6a4f;}
+.notif.warn{border-left:3px solid #b45309;}
+.notif.info{border-left:3px solid #1a5a9a;}
+.notif-icon{font-size:18px;flex-shrink:0;}
+.notif-body .notif-title{font-weight:600;font-size:13px;margin-bottom:3px;}
+.notif-body .notif-sub{font-size:11.5px;color:#666;}
+
+/* LIVE STATUS ENTRY */
+.live-entry{background:#eef7ee;border:1px solid #b2d8ba;border-radius:3px;padding:14px 18px;margin-bottom:10px;position:relative;}
+.live-entry .le-plate{font-size:17px;font-weight:700;color:#1a3a6b;letter-spacing:2px;font-family:'Courier New',monospace;}
+.live-entry .le-meta{font-size:12px;color:#555;margin-top:4px;}
+.live-entry .le-badge{position:absolute;top:12px;right:14px;}
+.no-active{text-align:center;padding:24px;color:#aaa;font-size:13px;border:1px dashed #ddd;border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- TOPNAV -->
+<div class="topnav">
+  <div class="topnav-left">
+    <a class="nav-brand" href="#">
+      <span style="font-weight:700;">SIX</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#aaa"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </a>
+    <button class="nav-item">Aplikasi <span class="nav-arrow">&#9660;</span></button>
+    <button class="nav-item">Menu <span class="nav-arrow">&#9660;</span></button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-divider"></div>
+    <div class="lang-wrap">
+      <button class="lang-btn lang-active">ID</button>
+      <button class="lang-btn">EN</button>
+    </div>
+    <div class="nav-divider"></div>
+    <button class="user-btn" id="user-btn-label">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#aaa"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      <span id="nav-username">Muhammad Abduh</span> <span class="nav-arrow">&#9660;</span>
+    </button>
+  </div>
+</div>
+
+<!-- CONNECTION STATUS BAR -->
+<div class="conn-bar off" id="conn-bar">
+  <div class="conn-dot"></div>
+  <span id="conn-label">Tidak terhubung ke server SIX</span>
+  <span style="margin-left:12px;font-size:11px;opacity:.7;" id="conn-sub"></span>
+</div>
+
+<div class="breadcrumb">
+  <a href="#">SIX</a><span class="bc-sep">&#187;</span><strong>Parkir</strong>
+</div>
+
+<div class="page">
+  <h1>Parkir</h1>
+  <p class="page-subtitle">ITB Jatinangor &mdash; Sistem Parkir ANPR</p>
+  <div class="alert alert-info">&#8505;&ensp;Sistem parkir <strong>ITB Jatinangor</strong> menggunakan <strong>ANPR (Automatic Number Plate Recognition)</strong>. Daftarkan plat nomor dan hubungkan e-wallet untuk autodebit otomatis saat keluar.</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('kendaraan',this)">Kendaraan Saya</button>
+    <button class="tab" onclick="switchTab('status',this)">Status Parkir</button>
+    <button class="tab" onclick="switchTab('riwayat',this)">Riwayat &amp; Biaya</button>
+    <button class="tab" onclick="switchTab('tarif',this)">Informasi Tarif</button>
+  </div>
+
+  <!-- ══════ TAB KENDARAAN ══════ -->
+  <div class="tab-content active" id="tab-kendaraan">
+    <div class="sec-title">Kendaraan Terdaftar</div>
+    <div class="panel">
+      <div class="panel-head">Daftar Kendaraan</div>
+      <div class="panel-body" style="padding:0 18px;" id="vehicle-list">
+        <div style="padding:20px;text-align:center;color:#aaa;">Memuat...</div>
+      </div>
+    </div>
+
+    <!-- E-wallet panel (shared) -->
+    <div id="ew-panel" style="display:none;" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:600;" id="ew-title">Kelola E-Wallet</div>
+        <button class="btn-link" onclick="document.getElementById('ew-panel').style.display='none'">Tutup</button>
+      </div>
+      <div class="ewallet-row" id="ew-body"></div>
+      <div class="hint">Autodebit dari e-wallet primer. Jika saldo tidak cukup, beralih ke cadangan.</div>
+    </div>
+
+    <div class="sec-title">Tambah Kendaraan Baru</div>
+    <div class="card">
+      <div class="form-row">
+        <div class="fg"><label>Plat Nomor</label><input type="text" placeholder="Contoh: D 1234 AB" style="width:150px;" id="inp-plat" oninput="this.value=this.value.toUpperCase()"/></div>
+        <div class="fg"><label>Jenis</label><select style="width:110px;" id="inp-jenis"><option>Motor</option><option>Mobil</option></select></div>
+        <div class="fg"><label>Merek / Model</label><input type="text" placeholder="Contoh: Honda Beat" style="width:170px;" id="inp-model"/></div>
+        <div class="fg"><label style="visibility:hidden;">x</label><button class="btn btn-blue" onclick="addVehicle()" id="btn-reg">+ Daftarkan</button></div>
+      </div>
+      <div class="hint">Setelah mendaftar, hubungkan e-wallet agar ANPR dapat melakukan autodebit saat keluar.</div>
+      <div id="reg-msg" style="display:none;margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB STATUS ══════ -->
+  <div class="tab-content" id="tab-status">
+    <div class="sec-title">Ringkasan Hari Ini</div>
+    <div class="panel" style="margin-bottom:18px;">
+      <div class="panel-head" id="stat-panel-head">Statistik Parkir — Hari Ini</div>
+      <div class="panel-body">
+        <div class="stat-grid" style="margin-bottom:0;">
+          <div class="stat-box"><div class="stat-num" id="s-aktif">—</div><div class="stat-lbl">Kendaraan parkir aktif</div></div>
+          <div class="stat-box"><div class="stat-num" id="dur-live">—</div><div class="stat-lbl">Durasi parkir saat ini</div></div>
+          <div class="stat-box"><div class="stat-num" id="est-live">—</div><div class="stat-lbl">Estimasi biaya</div></div>
+          <div class="stat-box"><div class="stat-num" id="s-reg">—</div><div class="stat-lbl">Kendaraan terdaftar</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status aktif real-time -->
+    <div class="sec-title"><span class="pulse-dot"></span>Kendaraan Parkir Saat Ini</div>
+    <div id="active-parking-list">
+      <div class="no-active">Belum ada kendaraan Anda yang sedang parkir saat ini.</div>
+    </div>
+
+    <!-- Event log real-time (masuk dari ANPR) -->
+    <div class="sec-title">Log Deteksi ANPR — Real-time</div>
+    <div id="anpr-log" style="max-height:260px;overflow-y:auto;">
+      <div style="color:#aaa;font-size:12px;padding:10px;">Menunggu sinyal ANPR...</div>
+    </div>
+
+    <!-- Gate info -->
+    <div class="sec-title" style="margin-top:20px;">Gerbang Parkir ITB Jatinangor</div>
+    <div class="gate-info">
+      <div class="gate-chip"><strong>Pintu Gerbang Utama</strong>Masuk: 1 Mobil + 1 Motor &bull; Keluar: 1 Mobil + 1 Motor &bull; Smartcard Manless</div>
+      <div class="gate-chip"><strong>Pintu Gerbang DKIJ</strong>Masuk: 2 Mobil &bull; Khusus Masuk &bull; Karyawan/Dosen</div>
+      <div class="gate-chip"><strong>Parkir Mahasiswa</strong>Masuk: 1 Mobil + 2 Motor &bull; Keluar: 1 Mobil + 2 Motor &bull; Berbayar — ANPR</div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB RIWAYAT ══════ -->
+  <div class="tab-content" id="tab-riwayat">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <div class="sec-title" style="margin:0;">Riwayat Parkir</div>
+      <div style="display:flex;gap:8px;">
+        <select style="border:1px solid #ccc;border-radius:3px;padding:5px 8px;font-size:12px;" id="filter-plat" onchange="renderHistory()">
+          <option value="all">Semua Kendaraan</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Tanggal &amp; Waktu</th><th>Plat</th><th>Lokasi</th><th>Durasi</th><th>Biaya</th><th>Metode</th><th>Status</th></tr></thead>
+        <tbody id="hist-body"></tbody>
+      </table>
+    </div>
+    <div class="total-row"><span>Total biaya bulan ini</span><strong id="total-val">—</strong></div>
+  </div>
+
+  <!-- ══════ TAB TARIF ══════ -->
+  <div class="tab-content" id="tab-tarif">
+    <div class="sec-title">Tarif Parkir di Area ITB Jatinangor</div>
+    <div class="alert alert-info">&#8505;&ensp;Jam operasional area berbayar: <strong>06.00 – 22.00 WIB</strong>. Tarif berlaku di <strong>Area Parkir Mahasiswa</strong>.</div>
+    <div style="overflow-x:auto;margin-bottom:18px;">
+      <table>
+        <thead><tr><th>Jenis</th><th>Tarif</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Motor</strong></td><td>Rp1.000</td><td>1 jam pertama; +Rp1.000/jam; Maks <strong>Rp2.000/hari</strong></td></tr>
+          <tr><td><strong>Motor Langganan</strong></td><td>Rp32.000</td><td>Bulanan (dibayar di awal)</td></tr>
+          <tr><td><strong>Mobil</strong></td><td>Rp2.000</td><td>1 jam pertama; +Rp1.000/jam; Maks <strong>Rp10.000/hari</strong></td></tr>
+          <tr><td><strong>Mobil Langganan</strong></td><td>Rp120.000</td><td>Bulanan (dibayar di awal)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sec-title">Metode Pembayaran</div>
+    <div class="method-grid">
+      <div class="method-card"><div style="font-size:12px;font-weight:600;color:#2d6a4f;margin-bottom:6px;">Autodebit</div><div style="font-size:12px;color:#555;">E-wallet didebit otomatis. Gate terbuka tanpa interaksi.</div><div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;"><span class="badge badge-green">GoPay</span><span class="badge badge-green">OVO</span><span class="badge badge-green">Dana</span></div></div>
+      <div class="method-card"><div style="font-size:12px;font-weight:600;color:#b45309;margin-bottom:6px;">QRIS / E-Money</div><div style="font-size:12px;color:#555;">Jika saldo tidak cukup atau belum terdaftar.</div><div style="margin-top:8px;"><span class="badge badge-orange">QRIS</span></div></div>
+      <div class="method-card"><div style="font-size:12px;font-weight:600;color:#557;margin-bottom:6px;">Tunai</div><div style="font-size:12px;color:#555;">Opsi terakhir via petugas gerbang.</div><div style="margin-top:8px;"><span class="badge badge-gray">Cash</span></div></div>
+    </div>
+    <div class="alert alert-warn">&#9888;&ensp;Kendaraan <strong>tidak terdaftar di SIX</strong> masuk sebagai <strong>Mode Tamu</strong>. Wajib lapor ke Security. Pembayaran manual saja.</div>
+    <div class="sec-title">Kalkulator Biaya</div>
+    <div class="card">
+      <div class="form-row">
+        <div class="fg"><label>Jenis</label><select id="calc-jenis" onchange="calcBiaya()" style="width:130px;"><option value="motor">Motor</option><option value="mobil">Mobil</option></select></div>
+        <div class="fg"><label>Durasi (jam)</label><input type="number" id="calc-dur" value="2" min="1" max="24" onchange="calcBiaya()" style="width:90px;"/></div>
+        <div class="fg"><label>Kondisi</label><select id="calc-kondisi" onchange="calcBiaya()" style="width:160px;"><option value="normal">Normal (Harian)</option><option value="langganan">Berlangganan Bulanan</option></select></div>
+      </div>
+      <div class="calc-result-box">
+        <div class="calc-main" id="calc-result">Rp1.000</div>
+        <div class="progress-bar-bg"><div class="progress-bar" id="calc-bar" style="width:10%;"></div></div>
+        <div class="calc-detail" id="calc-detail"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="notif-toast" id="notif-toast"></div>
+
+<!-- ════════════════════════════════════════════════════════════
+     JAVASCRIPT — Socket.IO + REST API Integration
+     ════════════════════════════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════
+const API_BASE = 'http://localhost:5000';
+
+// State
+let currentUser   = null;   // { user_id, name, nim }
+let vehicleList   = [];     // kendaraan terdaftar milik user
+let activeSessions= [];     // sesi parkir aktif milik user
+let historyList   = [];     // riwayat parkir milik user
+let socket        = null;
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  updateDate();
+  calcBiaya();
+  await autoLogin();   // login demo otomatis
+});
+
+async function autoLogin() {
+  // Login otomatis dengan akun demo
+  // Di produksi ini ikut SSO ITB
+  try {
+    const res = await fetch(`${API_BASE}/api/login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({nim:'13522001', password:'password123'})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentUser = {user_id: null, name: data.name, nim: data.nim};
+      document.getElementById('nav-username').textContent = data.name;
+      // Ambil user_id
+      const me = await fetch(`${API_BASE}/api/me`, {credentials:'include'});
+      const meData = await me.json();
+      currentUser.user_id = meData.user_id;
+      initSocket();
+      await loadAll();
+    }
+  } catch(e) {
+    setConnStatus('off', 'Server Flask tidak aktif — jalankan: python app.py', '');
+  }
+}
+
+// ═══════════════════════════════════════
+// SOCKET.IO
+// ═══════════════════════════════════════
+function initSocket() {
+  socket = io(API_BASE, {withCredentials: true});
+
+  socket.on('connect', () => {
+    setConnStatus('ok', 'Terhubung ke SIX Parkir Server', `Socket ID: ${socket.id}`);
+    // Bergabung ke room privat user ini
+    socket.emit('join_user_room', {user_id: currentUser.user_id});
+  });
+
+  socket.on('disconnect', () => {
+    setConnStatus('off', 'Koneksi terputus — mencoba reconnect...', '');
+  });
+
+  socket.on('room_joined', (data) => {
+    console.log('[Socket] Room joined:', data.room);
+  });
+
+  // ══ EVENT: Kendaraan MASUK terdeteksi ANPR ══
+  // PENTING: Event ini HANYA diterima jika plat adalah milik user ini.
+  // Plat tamu TIDAK akan pernah sampai ke sini (diblokir di app.py).
+  socket.on('parking_masuk', (data) => {
+    console.log('[ANPR] parking_masuk:', data);
+    onParkingMasuk(data);
+  });
+
+  // ══ EVENT: Kendaraan KELUAR terdeteksi ANPR ══
+  socket.on('parking_keluar', (data) => {
+    console.log('[ANPR] parking_keluar:', data);
+    onParkingKeluar(data);
+  });
+
+  socket.on('connect_error', (err) => {
+    setConnStatus('wait', 'Menghubungkan ke server...', err.message);
+  });
+}
+
+// ═══════════════════════════════════════
+// REAL-TIME EVENT HANDLERS
+// ═══════════════════════════════════════
+function onParkingMasuk(data) {
+  // Tambah ke active sessions
+  const session = {
+    session_id  : data.session_id,
+    plate       : data.plate,
+    plate_raw   : data.plate_raw,
+    jenis       : data.jenis,
+    model       : data.model || data.jenis,
+    masuk_at    : data.masuk_at,
+    gate        : data.gate,
+    confidence  : data.confidence,
+    autodebit   : data.autodebit,
+    autodebit_info: data.autodebit_info,
+    ewallet     : data.ewallet,
+    status      : 'aktif',
+  };
+
+  // Cegah duplikat
+  if (!activeSessions.find(s => s.plate_raw === data.plate_raw)) {
+    activeSessions.unshift(session);
+  }
+  renderActiveParking();
+  addAnprLog('masuk', data);
+
+  // Switch ke tab Status
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-status').classList.add('active');
+  document.querySelectorAll('.tab')[1].classList.add('active');
+
+  // Notifikasi toast
+  const autoStr = data.autodebit
+    ? `<span class="badge badge-green">Autodebit Aktif</span>`
+    : `<span class="badge badge-orange">Bayar Manual saat Keluar</span>`;
+  showNotif('success', '🚗 Kendaraan Masuk Terdeteksi',
+    `${data.plate} masuk di ${data.gate} — Conf: ${data.confidence}% — ${data.autodebit_info}`);
+
+  updateStatBadges();
+}
+
+function onParkingKeluar(data) {
+  // Hapus dari active sessions
+  activeSessions = activeSessions.filter(s => s.session_id !== data.session_id);
+
+  // Tambah ke history
+  historyList.unshift({
+    plate       : data.plate,
+    masuk_at    : data.masuk_at,
+    keluar_at   : data.keluar_at,
+    durasi_menit: data.durasi_menit,
+    biaya       : data.biaya,
+    metode      : data.metode,
+    gate        : data.gate,
+    status      : 'selesai',
+  });
+
+  renderActiveParking();
+  renderHistory();
+  addAnprLog('keluar', data);
+  updateStatBadges();
+
+  const metStr = data.metode === 'autodebit' ? 'Autodebit ✓' : 'Manual';
+  showNotif('info', '🏁 Kendaraan Keluar',
+    `${data.plate} — Durasi: ${fmtDur(data.durasi_menit*60*1000)} — Biaya: Rp${data.biaya.toLocaleString('id-ID')} (${metStr})`);
+}
+
+// ═══════════════════════════════════════
+// LOAD DATA FROM REST API
+// ═══════════════════════════════════════
+async function loadAll() {
+  await Promise.all([loadVehicles(), loadActiveSessions(), loadHistory()]);
+  updateStatBadges();
+}
+
+async function loadVehicles() {
+  try {
+    const res = await fetch(`${API_BASE}/api/vehicles`, {credentials:'include'});
+    vehicleList = await res.json();
+    renderVehicleList();
+    updateFilterSelect();
+  } catch(e) { console.warn('loadVehicles error:', e); }
+}
+
+async function loadActiveSessions() {
+  try {
+    const res = await fetch(`${API_BASE}/api/parking/active`, {credentials:'include'});
+    activeSessions = await res.json();
+    renderActiveParking();
+  } catch(e) { console.warn('loadActiveSessions error:', e); }
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API_BASE}/api/parking/history`, {credentials:'include'});
+    historyList = await res.json();
+    renderHistory();
+  } catch(e) { console.warn('loadHistory error:', e); }
+}
+
+// ═══════════════════════════════════════
+// RENDER: VEHICLE LIST
+// ═══════════════════════════════════════
+function renderVehicleList() {
+  const el = document.getElementById('vehicle-list');
+  if (!vehicleList.length) {
+    el.innerHTML = '<div style="padding:16px;color:#aaa;text-align:center;font-size:13px;">Belum ada kendaraan terdaftar.</div>';
+    return;
+  }
+  el.innerHTML = vehicleList.map(v => {
+    const ewStatus = v.ewallet_primary
+      ? `<span style="color:#2d6a4f;">GoPay, OVO terhubung &bull; Autodebit Aktif ✓</span>`
+      : `<span style="color:#c62828;">Belum ada e-wallet</span>`;
+    const activeBadge = v.status === 'aktif'
+      ? `<span class="badge badge-green">Aktif</span>`
+      : `<span class="badge badge-gray">Nonaktif</span>`;
+    const anprBadge = v.anpr_verified
+      ? `<span style="color:#2d6a4f;font-size:11px;">ANPR Terverifikasi ✓</span>`
+      : `<span style="color:#b45309;font-size:11px;">Belum Terverifikasi</span>`;
+    return `
+      <div class="vehicle-row" id="vrow-${v.id}">
+        <div class="v-left">
+          <div class="plate">${v.plate_display}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#333;">${v.model || v.jenis}</div>
+            <div class="v-meta">${v.jenis} &bull; ${ewStatus} &bull; ${anprBadge}</div>
+          </div>
+        </div>
+        <div class="v-actions">
+          ${activeBadge}
+          <button class="btn btn-outline-blue btn-sm" onclick="toggleEw(${v.id},'${v.plate_display}')">Kelola E-Wallet</button>
+          <button class="btn btn-outline-red btn-sm" onclick="deleteVehicle(${v.id})">Hapus</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// RENDER: ACTIVE PARKING
+// ═══════════════════════════════════════
+function renderActiveParking() {
+  const el = document.getElementById('active-parking-list');
+  if (!activeSessions.length) {
+    el.innerHTML = '<div class="no-active">Belum ada kendaraan Anda yang sedang parkir saat ini.</div>';
+    return;
+  }
+  el.innerHTML = activeSessions.map(s => {
+    const masukDt = new Date(s.masuk_at);
+    const dur = Date.now() - masukDt.getTime();
+    const durStr = fmtDur(dur);
+    const jam = Math.ceil(dur / 3600000) || 1;
+    const estBiaya = s.jenis === 'Mobil'
+      ? Math.min(2000 + (jam-1)*1000, 10000)
+      : Math.min(1000 + (jam-1)*1000, 2000);
+    const autoStr = s.autodebit
+      ? '<span class="badge badge-green">Autodebit Aktif</span>'
+      : '<span class="badge badge-orange">Bayar Manual</span>';
+    return `
+      <div class="live-entry" id="ses-${s.session_id}">
+        <div class="le-badge">${autoStr}</div>
+        <div class="le-plate">${s.plate || s.plate_display}</div>
+        <div class="le-meta">
+          ${s.model || s.jenis} &bull;
+          Masuk: <strong>${fmtTime(masukDt)}</strong> &bull;
+          Durasi: <span class="dur-live" data-masuk="${masukDt.getTime()}"><strong>${durStr}</strong></span> &bull;
+          Est. biaya: <strong>Rp${estBiaya.toLocaleString('id-ID')}</strong> &bull;
+          Lokasi: ${s.gate || 'Parkir Mahasiswa'} &bull;
+          ANPR: ${s.confidence}%
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// RENDER: HISTORY TABLE
+// ═══════════════════════════════════════
+function renderHistory() {
+  const filterPlat = document.getElementById('filter-plat').value;
+  const rows = historyList.filter(r => filterPlat === 'all' || r.plate_display === filterPlat || r.plate === filterPlat);
+  const tbody = document.getElementById('hist-body');
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Tidak ada data</td></tr>';
+    document.getElementById('total-val').textContent = '—';
+    return;
+  }
+
+  let total = 0;
+  tbody.innerHTML = rows.map(r => {
+    total += (r.biaya || 0);
+    const plate = r.plate_display || r.plate || '—';
+    const masuk = r.masuk_at ? new Date(r.masuk_at) : null;
+    const keluar = r.keluar_at ? new Date(r.keluar_at) : null;
+    const durStr = r.durasi_menit ? fmtDur(r.durasi_menit * 60000) : (r.status === 'aktif' ? 'Sedang Parkir' : '—');
+    const metBadge = r.metode === 'autodebit'
+      ? '<span class="badge badge-green">Autodebit</span>'
+      : r.metode === 'qris' ? '<span class="badge badge-orange">QRIS</span>'
+      : r.metode === 'tamu_manual' ? '<span class="badge badge-gray">Manual</span>'
+      : '—';
+    const statBadge = r.status === 'aktif'
+      ? '<span class="badge badge-blue">Parkir Aktif</span>'
+      : '<span class="badge badge-gray">Selesai</span>';
+    const confColor = (r.confidence >= 90) ? '#2d6a4f' : (r.confidence >= 75) ? '#b45309' : '#b91c1c';
+    return `<tr>
+      <td>${masuk ? masuk.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'}) : '—'}<br>
+          <span style="color:#888;font-size:11.5px;">${masuk?fmtTime(masuk):''} – ${keluar?fmtTime(keluar):'sekarang'}</span></td>
+      <td><span class="plate" style="font-size:10px;padding:2px 8px;letter-spacing:1.5px;">${plate}</span>
+          <br><span style="font-size:10.5px;color:${confColor};">ANPR ${r.confidence||'?'}%</span></td>
+      <td>${r.lokasi || 'Parkir Mahasiswa'}</td>
+      <td><span class="badge badge-blue">${durStr}</span></td>
+      <td style="font-weight:600;">${r.biaya ? 'Rp'+r.biaya.toLocaleString('id-ID') : '—'}</td>
+      <td>${metBadge}</td>
+      <td>${statBadge}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('total-val').textContent = total > 0 ? 'Rp'+total.toLocaleString('id-ID') : '—';
+}
+
+// ═══════════════════════════════════════
+// ANPR LOG
+// ═══════════════════════════════════════
+function addAnprLog(type, data) {
+  const el = document.getElementById('anpr-log');
+  const isFirst = el.querySelector('div[style*="color:#aaa"]');
+  if (isFirst) el.innerHTML = '';
+
+  const color = type === 'masuk' ? '#2d6a4f' : '#1a4a80';
+  const icon  = type === 'masuk' ? '↓ MASUK' : '↑ KELUAR';
+  const ts    = new Date().toLocaleTimeString('id-ID');
+  const plate = data.plate || data.plate_display || '—';
+  const conf  = data.confidence || '?';
+
+  const div = document.createElement('div');
+  div.style.cssText = `padding:7px 12px;border-bottom:1px solid #eee;font-size:12px;display:flex;align-items:center;gap:10px;`;
+  div.innerHTML = `
+    <span style="background:${color};color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;">${icon}</span>
+    <span class="plate" style="font-size:10px;padding:2px 8px;">${plate}</span>
+    <span style="color:#555;">${data.gate || '—'}</span>
+    <span style="color:#888;font-size:11px;">Conf: ${conf}%</span>
+    <span style="margin-left:auto;color:#aaa;font-size:11px;">${ts}</span>`;
+  el.prepend(div);
+
+  // Keep max 20 entries
+  while (el.children.length > 20) el.removeChild(el.lastChild);
+}
+
+// ═══════════════════════════════════════
+// ADD VEHICLE (REST API)
+// ═══════════════════════════════════════
+async function addVehicle() {
+  const plate_display = document.getElementById('inp-plat').value.trim().toUpperCase();
+  const jenis  = document.getElementById('inp-jenis').value;
+  const model  = document.getElementById('inp-model').value.trim();
+  const msgEl  = document.getElementById('reg-msg');
+
+  if (!plate_display || !model) {
+    showMsg(msgEl, 'warn', 'Lengkapi plat nomor dan merek kendaraan.');
+    return;
+  }
+
+  document.getElementById('btn-reg').disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/vehicles`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({plate_display, jenis, model}),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showMsg(msgEl, 'success', `✅ ${plate_display} (${model}) berhasil didaftarkan. Hubungkan e-wallet agar autodebit aktif.`);
+      document.getElementById('inp-plat').value = '';
+      document.getElementById('inp-model').value = '';
+      await loadVehicles();
+      await loadAll();
+    } else {
+      showMsg(msgEl, 'warn', data.error || 'Gagal mendaftarkan kendaraan.');
+    }
+  } catch(e) {
+    showMsg(msgEl, 'danger', 'Server tidak dapat dijangkau.');
+  }
+  document.getElementById('btn-reg').disabled = false;
+}
+
+async function deleteVehicle(vid) {
+  if (!confirm('Hapus kendaraan ini dari akun Anda?')) return;
+  try {
+    await fetch(`${API_BASE}/api/vehicles/${vid}`, {method:'DELETE', credentials:'include'});
+    await loadVehicles();
+    updateStatBadges();
+  } catch(e) { alert('Gagal menghapus'); }
+}
+
+// ═══════════════════════════════════════
+// E-WALLET PANEL
+// ═══════════════════════════════════════
+function toggleEw(vid, plat) {
+  const p  = document.getElementById('ew-panel');
+  const bl = document.getElementById('ew-body');
+  document.getElementById('ew-title').textContent = 'Kelola E-Wallet — ' + plat;
+  const v = vehicleList.find(x => x.id === vid) || {};
+  bl.innerHTML = `
+    <div class="ew-chip">
+      <div style="width:26px;height:26px;background:#00aae4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;">G</div>
+      <div><div class="ew-name">GoPay</div><div class="ew-bal">Saldo: Rp${(v.ewallet_balance||0).toLocaleString('id-ID')}</div></div>
+      ${v.ewallet_primary==='GoPay'?'<span class="badge badge-green">Primer</span>':'<span class="badge badge-gray">Tersedia</span>'}
+    </div>
+    <button class="btn btn-outline-blue btn-sm">+ Tambah E-Wallet</button>`;
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════
+// STAT BADGES
+// ═══════════════════════════════════════
+function updateStatBadges() {
+  document.getElementById('s-aktif').textContent = activeSessions.length;
+  document.getElementById('s-reg').textContent   = vehicleList.filter(v=>v.status==='aktif').length;
+
+  if (activeSessions.length > 0) {
+    const s = activeSessions[0];
+    const masukDt = new Date(s.masuk_at || s.masuk || Date.now());
+    const dur = Date.now() - masukDt.getTime();
+    const jam = Math.ceil(dur / 3600000) || 1;
+    const biaya = s.jenis === 'Mobil'
+      ? Math.min(2000 + (jam-1)*1000, 10000)
+      : Math.min(1000 + (jam-1)*1000, 2000);
+    document.getElementById('dur-live').textContent = fmtDur(dur);
+    document.getElementById('est-live').textContent = 'Rp' + biaya.toLocaleString('id-ID');
+  } else {
+    document.getElementById('dur-live').textContent = '—';
+    document.getElementById('est-live').textContent = '—';
+  }
+}
+
+// ═══════════════════════════════════════
+// FILTER SELECT
+// ═══════════════════════════════════════
+function updateFilterSelect() {
+  const sel = document.getElementById('filter-plat');
+  const current = sel.value;
+  sel.innerHTML = '<option value="all">Semua Kendaraan</option>' +
+    vehicleList.map(v => `<option value="${v.plate_display}">${v.plate_display}</option>`).join('');
+  sel.value = current;
+}
+
+// ═══════════════════════════════════════
+// KALKULATOR
+// ═══════════════════════════════════════
+function calcBiaya() {
+  const jenis = (document.getElementById('calc-jenis')||{}).value || 'motor';
+  const dur   = Math.max(1, parseInt((document.getElementById('calc-dur')||{}).value) || 1);
+  const kondisi = (document.getElementById('calc-kondisi')||{}).value || 'normal';
+  let total, detail, maxVal;
+  if (kondisi === 'langganan') {
+    total = jenis === 'motor' ? 32000 : 120000;
+    detail = jenis === 'motor' ? 'Berlangganan motor: Rp32.000/bulan' : 'Berlangganan mobil: Rp120.000/bulan';
+    maxVal = total;
+  } else if (jenis === 'motor') {
+    total = Math.min(1000 + (dur-1)*1000, 2000); maxVal = 2000;
+    detail = dur===1 ? '1 jam pertama: Rp1.000' : `1 jam pertama: Rp1.000 + ${dur-1}×Rp1.000 = Rp${total.toLocaleString('id-ID')} (maks Rp2.000/hari)`;
+  } else {
+    total = Math.min(2000 + (dur-1)*1000, 10000); maxVal = 10000;
+    detail = `1 jam pertama: Rp2.000${dur>1?' + '+(dur-1)+'×Rp1.000 = Rp'+total.toLocaleString('id-ID')+' (maks Rp10.000/hari)':''}`;
+  }
+  document.getElementById('calc-result').textContent = 'Rp'+total.toLocaleString('id-ID');
+  document.getElementById('calc-detail').textContent = detail;
+  document.getElementById('calc-bar').style.width = Math.round((total/maxVal)*100)+'%';
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'riwayat') renderHistory();
+}
+
+function fmtTime(d) {
+  if (!d) return '—';
+  if (typeof d === 'string') d = new Date(d);
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+
+function fmtDur(ms) {
+  if (!ms || ms < 0) return '0m';
+  const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+  return h > 0 ? `${h}j ${m}m` : `${m}m`;
+}
+
+function updateDate() {
+  const now = new Date();
+  const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const s = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('stat-panel-head').textContent = `Statistik Parkir — ${s}`;
+}
+
+function setConnStatus(state, label, sub) {
+  const bar = document.getElementById('conn-bar');
+  bar.className = 'conn-bar ' + state;
+  document.getElementById('conn-label').textContent = label;
+  document.getElementById('conn-sub').textContent = sub || '';
+}
+
+function showMsg(el, type, text) {
+  el.className = 'alert alert-' + type;
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+function showNotif(type, title, sub) {
+  const wrap = document.getElementById('notif-toast');
+  const el = document.createElement('div');
+  el.className = `notif ${type}`;
+  const icons = {success:'✅', info:'ℹ️', warn:'⚠️'};
+  el.innerHTML = `<div class="notif-icon">${icons[type]||'•'}</div>
+    <div class="notif-body"><div class="notif-title">${title}</div><div class="notif-sub">${sub}</div></div>`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),450); }, 6000);
+}
+
+// Refresh durasi setiap 30 detik
+setInterval(() => {
+  updateStatBadges();
+  renderActiveParking();
+}, 30000);
+</script>
+</body>
+</html>
