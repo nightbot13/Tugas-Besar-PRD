@@ -1,0 +1,1250 @@
+/*
+ * globals.css — ANPR Parking Gate, ITB Jatinangor
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Built from the REAL SIX ITB source files:
+ *   • bootstrap.min.css        → Bootstrap 3.3.7 base
+ *   • style-20200730.css       → Real SIX overrides (navbar, breadcrumb, table…)
+ *   • roboto.css               → Google Fonts Roboto (the actual SIX font file)
+ *   • all.css + v4-shims.css   → Font Awesome 5
+ *
+ * This file is imported in app/layout.tsx INSTEAD of individual <link> tags.
+ * It is the only CSS file needed beyond Bootstrap 3.3.7 itself.
+ *
+ * Layer order:
+ *   1. @import bootstrap        → grid, base components, resets
+ *   2. @import roboto           → Roboto font (matches real SIX body font)
+ *   3. @import all + v4-shims   → Font Awesome 5 icons
+ *   4. SIX base overrides       → copied verbatim from style-20200730.css
+ *   5. Parking-specific styles  → .panel-head, .plate, .tab, etc.
+ *   6. Bootstrap 3 conflict fixes → scoped !important overrides where needed
+ *   7. Responsive breakpoints
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── 1. Bootstrap 3.3.7 ────────────────────────────────────────────────────── */
+@import url('/css/bootstrap.min.css');
+@import url('/css/bootstrap-theme.min.css');
+
+/* ── 2. Roboto font (real SIX font, sourced from Google Fonts) ─────────────── */
+@import url('/css/roboto.css');
+
+/* ── 3. Font Awesome 5 ─────────────────────────────────────────────────────── */
+@import url('/css/all.css');
+@import url('/css/v4-shims.css');
+
+/* ── 4. Plugin CSS ─────────────────────────────────────────────────────────── */
+@import url('/css/bootstrap-notifications.min.css');
+@import url('/css/jquery-confirm.min.css');
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   5. SIX BASE OVERRIDES — verbatim from style-20200730.css
+   These are the REAL SIX portal styles. Do not modify these rules.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+body {
+  font-family: 'Roboto', sans-serif;
+  color: black;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-weight: 300;
+  color: #036;
+  letter-spacing: 0.2px;
+}
+
+nav li.dropdown {
+  font-size: 15px;
+}
+
+.breadcrumb > li + li:before {
+  content: "\00BB";
+}
+
+.table thead > tr > th.middle-valign,
+.table tbody > tr > th.middle-valign,
+.table tbody > tr > td.middle-valign {
+  vertical-align: middle;
+}
+
+.table-condensed > tbody > tr > td,
+.table-condensed > tbody > tr > th {
+  padding: 2px;
+  font-size: small;
+  font-family: 'Roboto', sans-serif;
+}
+
+div.bootstrap-date, div.bootstrap-time {
+  display: inline-block;
+}
+
+.bootstrap-date select.form-control,
+.bootstrap-time select.form-control {
+  width: initial;
+  display: inline-block;
+}
+
+.page-header {
+  margin-top: 5px;
+}
+
+.panel-heading a:after {
+  font-family: 'Glyphicons Halflings';
+  content: "\e114";
+  float: right;
+  color: grey;
+}
+
+.panel-heading a.collapsed:after {
+  content: "\e080";
+}
+
+h3.panel-title {
+  font-weight: normal;
+}
+
+.panel-danger > .panel-heading {
+  background: #a94442;
+  color: white;
+}
+
+.navbar-inverse .navbar-nav > li > a {
+  color: white;
+}
+
+.form-group label {
+  display: block;
+}
+
+form.form-horizontal .form-group .statictext {
+  padding-top: 7px;
+  margin-bottom: 0;
+}
+
+.filter-form label {
+  margin-bottom: 1px;
+}
+
+.filter-form .form-group {
+  margin-bottom: 5px;
+}
+
+.filter-form button {
+  margin-top: 20px;
+}
+
+/* Wizard steps */
+.wizard .step {
+  padding: 12px 12px 10px 12px;
+  margin-right: 5px;
+  background: #efefef;
+  position: relative;
+  display: inline-block;
+}
+.wizard .step:before {
+  width: 0; height: 0;
+  border-top: 20px inset transparent;
+  border-bottom: 20px inset transparent;
+  border-left: 20px solid #fff;
+  position: absolute; content: ""; top: 0; left: 0;
+}
+.wizard .step:after {
+  width: 0; height: 0;
+  border-top: 20px inset transparent;
+  border-bottom: 20px inset transparent;
+  border-left: 20px solid #efefef;
+  position: absolute; content: ""; top: 0; right: -20px; z-index: 2;
+}
+.wizard .step:first-child:before { border: none; }
+.wizard .step:last-child:after   { border: none; }
+.wizard .step:first-child { border-radius: 4px 0 0 4px; }
+.wizard .step:last-child  { border-radius: 0 4px 4px 0; }
+.wizard i { margin: 0 5px 0 18px; position: relative; top: -1px; }
+.wizard .step:first-child i { margin-left: 0; }
+.wizard .current { background: #337ab7; color: #fff; }
+.wizard .current:after { border-left-color: #337ab7; }
+.wizard { margin-bottom: 1em; }
+
+/* Callout boxes */
+.bs-callout {
+  margin: 20px 0;
+  padding: 15px 30px 15px 15px;
+  border-left: 5px solid #eee;
+}
+.bs-callout h4       { margin-top: 0; }
+.bs-callout p:last-child { margin-bottom: 0; }
+.bs-callout code,
+.bs-callout .highlight { background-color: #fff; }
+.bs-callout-danger  { background-color: #fcf2f2; border-color: #dfb5b4; }
+.bs-callout-warning { background-color: #fefbed; border-color: #f1e7bc; }
+.bs-callout-info    { background-color: #f0f7fd; border-color: #d0e3f0; }
+
+.alert { color: #222; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   6. NEXT.JS LAYOUT FIXES
+   ── The real SIX portal runs on Django with Bootstrap's fixed .navbar-fixed-top
+      which requires body { padding-top: 70px }.
+      Our Next.js app uses a sticky topnav rendered in React — no fixed navbar,
+      so we cancel those values here.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  /* Cancel the Bootstrap navbar-fixed-top compensation from style-20200730.css */
+  padding-top: 0 !important;
+  /* Cancel the footer height margin from style-20200730.css */
+  margin-bottom: 0 !important;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Next.js wraps everything in a <div id="__next"> — ensure it fills the viewport */
+#__next {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   7. TOPNAV — Real SIX topnav (the dark bar above the Bootstrap navbar)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.topnav {
+  background: #2b2b2b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  height: 46px;
+  position: sticky;
+  top: 0;
+  z-index: 1030; /* above Bootstrap's z-index: 1000 */
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.topnav-left {
+  display: flex;
+  align-items: center;
+}
+
+.nav-brand {
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 0 10px 0 24px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.3px;
+  text-decoration: none !important;
+  font-family: 'Roboto', sans-serif;
+}
+.nav-brand:hover {
+  color: #fff !important;
+  text-decoration: none !important;
+}
+
+.nav-brand-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.nav-brand-icon {
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+}
+
+/* Nav items — the pill-style buttons in the dark topnav */
+.nav-item {
+  color: #bbb;
+  font-size: 13px;
+  padding: 0 14px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  gap: 4px;
+  font-family: 'Roboto', sans-serif;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.nav-arrow {
+  font-size: 8px;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  height: 46px;
+}
+
+.nav-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  height: 24px;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* Language switcher */
+.lang-wrap {
+  display: flex;
+  align-items: center;
+  height: 46px;
+}
+
+.lang-btn {
+  background: transparent;
+  color: #999;
+  border: none;
+  padding: 0 10px;
+  height: 46px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+  letter-spacing: 0.5px;
+  transition: background 0.12s, color 0.12s;
+}
+.lang-btn.lang-active {
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+.lang-btn:hover:not(.lang-active) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ddd;
+}
+
+/* User button */
+.user-btn {
+  background: transparent;
+  color: #bbb;
+  border: none;
+  padding: 0 24px 0 12px;
+  height: 46px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Roboto', sans-serif;
+  transition: background 0.12s, color 0.12s;
+}
+.user-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.user-circle-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   8. BREADCRUMB — Real SIX breadcrumb (div-based, not Bootstrap ol-based)
+      Bootstrap 3 .breadcrumb uses <ol><li>. Ours is a <div> with <a> and spans.
+      We override Bootstrap's list-based styles completely.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.breadcrumb {
+  background: #f5f5f5 !important;
+  padding: 9px 24px !important;
+  border-radius: 0 !important;
+  margin-bottom: 0 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  font-size: 12.5px !important;
+  color: #666 !important;
+  list-style: none !important;
+  /* Flex row for our React component */
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+/* Kill Bootstrap's auto-generated "/" separator via li+li:before */
+.breadcrumb > li + li::before {
+  content: none !important;
+  padding: 0 !important;
+  color: transparent !important;
+}
+
+.breadcrumb a {
+  color: #337ab7;
+  font-family: 'Roboto', sans-serif;
+}
+.breadcrumb a:hover {
+  color: #23527c;
+  text-decoration: underline;
+}
+
+.breadcrumb > .active {
+  color: #333 !important;
+  font-weight: 500;
+}
+
+.bc-sep {
+  color: #bbb;
+  margin: 0 6px;
+  font-size: 11px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   9. PAGE CONTENT WRAPPER
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.page {
+  flex: 1;
+  background: #fff;
+  padding: 24px 24px 60px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Page title — override the SIX h1 color #036 for parking page */
+.page > h1 {
+  font-size: 28px;
+  font-weight: 300;
+  color: #036;          /* Real SIX heading color */
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 18px;
+  font-family: 'Roboto', sans-serif;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   10. ALERTS — extend Bootstrap 3 alert with SIX-accurate colors
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Shared alert base — Bootstrap 3 already defines padding/margin/border-radius */
+.alert {
+  font-family: 'Roboto', sans-serif;
+  font-size: 13px;
+  border-radius: 3px;
+}
+
+.alert-info {
+  background-color: #d9edf7 !important;  /* Bootstrap's default — matches SIX */
+  border-color: #bce8f1 !important;
+  color: #31708f !important;
+}
+
+/* Custom alert-warn (Bootstrap uses alert-warning) */
+.alert-warn {
+  background-color: #fffde7;
+  border-color: #f0c040;
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 10px 15px;
+  color: #5a4000;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   11. TABS — matches SIX Kurikulum / Jadwal tab style
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 20px;
+  gap: 0;
+  flex-wrap: nowrap;
+}
+
+.tab {
+  /* Reset Bootstrap .btn */
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-family: 'Roboto', sans-serif;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: #337ab7;       /* Bootstrap link blue — matches real SIX tabs */
+  background: transparent;
+  border-radius: 3px 3px 0 0;
+  position: relative;
+  bottom: -1px;
+  line-height: 1.5;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  text-decoration: none;
+  outline: none;
+  box-shadow: none;
+}
+.tab:hover {
+  background: #eef4fb;
+  color: #23527c;
+  text-decoration: none;
+}
+.tab.active {
+  background: #fff;
+  border-color: #ddd #ddd #fff #ddd;
+  color: #555;
+  font-weight: 500;
+  cursor: default;
+}
+.tab:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   12. SECTION TITLE — blue left-border heading (seen across all SIX subpages)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.sec-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #333;
+  margin: 18px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid #337ab7;
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.4;
+}
+.sec-title:first-child {
+  margin-top: 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   13. CARD (plain background container)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.card {
+  background: #f9f9f9;
+  border: 1px solid #e3e3e3;
+  border-radius: 3px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   14. PANEL — SIX blue-header data panel
+       Bootstrap 3 also defines .panel. We override with !important where needed.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.panel {
+  border: 1px solid #c8d8ea !important;
+  border-radius: 3px !important;
+  margin-bottom: 16px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  background: #fff !important;
+}
+
+/* Our blue panel header (not Bootstrap's .panel-heading) */
+.panel-head {
+  background: #337ab7;    /* Bootstrap primary blue — real SIX panel color */
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 14px;
+  font-family: 'Roboto', sans-serif;
+  letter-spacing: 0.1px;
+}
+
+.panel-body {
+  background: #fff;
+  padding: 14px !important;  /* Override Bootstrap's 15px */
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   15. BADGES — pill labels (override Bootstrap 3's circular counter badge)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Reset Bootstrap badge to pill style */
+.badge {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+  border-radius: 10px !important;
+  display: inline-block !important;
+  min-width: 0 !important;
+  line-height: 1.5 !important;
+  vertical-align: middle !important;
+  font-family: 'Roboto', sans-serif;
+}
+
+.badge-green  { background: #dff0d8 !important; color: #3c763d !important; }
+.badge-red    { background: #f2dede !important; color: #a94442 !important; }
+.badge-blue   { background: #d9edf7 !important; color: #31708f !important; }
+.badge-orange { background: #fcf8e3 !important; color: #8a6d3b !important; }
+.badge-gray   { background: #f5f5f5 !important; color: #777    !important; border: 1px solid #e3e3e3 !important; }
+.badge-purple { background: #f3e8ff !important; color: #6b21a8 !important; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   16. VEHICLE ROWS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.vehicle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 10px;
+}
+.vehicle-row:last-child {
+  border-bottom: none;
+}
+
+.v-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Indonesian police-style license plate */
+.plate {
+  background: #1a3a6b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  padding: 4px 11px;
+  border-radius: 3px;
+  border: 2px solid #0d2040;
+  white-space: nowrap;
+  font-family: 'Courier New', Courier, monospace;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.v-meta {
+  font-size: 12px;
+  color: #777;
+  margin-top: 3px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.v-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   17. BUTTONS — override Bootstrap 3 .btn with SIX-accurate styles
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Base .btn — used alongside Bootstrap's .btn */
+.btn {
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 13px !important;
+  border-radius: 3px !important;
+  padding: 5px 12px !important;
+  cursor: pointer;
+  line-height: 1.5 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn:focus,
+.btn:active:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(51, 122, 183, 0.25) !important;
+}
+
+/* Primary SIX blue button */
+.btn-blue {
+  background: #337ab7 !important;
+  border: 1px solid #2e6da4 !important;
+  color: #fff !important;
+}
+.btn-blue:hover {
+  background: #286090 !important;
+  border-color: #204d74 !important;
+  color: #fff !important;
+}
+
+/* Outline variants */
+.btn-outline-blue {
+  background: #fff !important;
+  border: 1px solid #337ab7 !important;
+  color: #337ab7 !important;
+}
+.btn-outline-blue:hover {
+  background: #d9edf7 !important;
+  color: #286090 !important;
+}
+
+.btn-outline-red {
+  background: #fff !important;
+  border: 1px solid #d9534f !important;
+  color: #d9534f !important;
+}
+.btn-outline-red:hover {
+  background: #f2dede !important;
+  color: #c9302c !important;
+}
+
+/* Link-style button */
+.btn-link {
+  background: transparent !important;
+  border: none !important;
+  color: #337ab7 !important;
+  font-size: 12px !important;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+.btn-link:hover {
+  color: #23527c !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   18. FORMS — custom .fg / .form-row (not Bootstrap .form-group)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.fg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fg label {
+  font-size: 12px;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 0;
+  display: block;
+  font-family: 'Roboto', sans-serif;
+}
+
+.fg input,
+.fg select {
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 5px 9px;
+  font-size: 13px;
+  color: #333;
+  background: #fff;
+  font-family: 'Roboto', sans-serif;
+  height: auto;        /* Override Bootstrap .form-control height: 34px */
+  box-shadow: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.fg input:focus,
+.fg select:focus {
+  outline: none;
+  border-color: #66afe9;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 6px rgba(102,175,233,.6);
+}
+
+.hint {
+  font-size: 11.5px;
+  color: #999;
+  margin-top: 4px;
+  font-family: 'Roboto', sans-serif;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   19. TABLES — scoped inside .panel-body to avoid Bootstrap .table conflicts
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.panel-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+.panel-body table thead tr {
+  background: #337ab7;
+  color: #fff;
+}
+
+.panel-body table th {
+  text-align: left;
+  padding: 9px 13px;
+  font-weight: 500;
+  color: #fff;
+  font-size: 12.5px;
+  border: none;
+  white-space: nowrap;
+}
+
+.panel-body table td {
+  padding: 8px 13px;
+  border-bottom: 1px solid #f0f0f0;
+  border-top: none;
+  color: #333;
+  vertical-align: top;
+}
+
+.panel-body table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.panel-body table tbody tr:hover td {
+  background: #f5f9fd;
+}
+
+.panel-body table tr.group-row td {
+  background: #fffde7;
+  font-weight: 600;
+  color: #444;
+  font-size: 12.5px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   20. STAT GRID (Status tab summary)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-box {
+  background: #fff;
+  border: 1px solid #d9edf7;
+  border-radius: 3px;
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: #31708f;
+  font-family: 'Roboto', sans-serif;
+}
+
+.stat-lbl {
+  font-size: 11.5px;
+  color: #777;
+  margin-top: 5px;
+  font-family: 'Roboto', sans-serif;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   21. ACTIVE SESSION STATUS BAR
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.status-big {
+  display: flex;
+  border: 1px solid #e3e3e3;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.status-cell {
+  flex: 1;
+  padding: 14px 16px;
+  border-right: 1px solid #e3e3e3;
+  min-width: 0;
+}
+.status-cell:last-child {
+  border-right: none;
+}
+
+.status-cell .lbl {
+  font-size: 10.5px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.status-cell .val {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  font-family: 'Roboto', sans-serif;
+}
+
+.status-cell .sub {
+  font-size: 12px;
+  color: #888;
+  margin-top: 3px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.status-cell.active-cell {
+  background: #dff0d8;  /* Bootstrap success tint — real SIX green */
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   22. GATE CHIPS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.gate-info {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.gate-chip {
+  background: #f9f9f9;
+  border: 1px solid #e3e3e3;
+  border-radius: 3px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #555;
+  font-family: 'Roboto', sans-serif;
+}
+
+.gate-chip strong {
+  color: #337ab7;
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   23. E-WALLET
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.ewallet-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.ew-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #d9edf7;
+  border: 1px solid #bce8f1;
+  border-radius: 3px;
+  padding: 7px 12px;
+}
+
+.ew-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  font-family: 'Roboto', sans-serif;
+}
+
+.ew-bal {
+  font-size: 11px;
+  color: #31708f;
+  font-family: 'Roboto', sans-serif;
+}
+
+.total-row {
+  background: #d9edf7;
+  border: 1px solid #bce8f1;
+  border-radius: 3px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 13px;
+  font-family: 'Roboto', sans-serif;
+  color: #31708f;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   24. PROGRESS BAR (tarif calculator)
+       Bootstrap 3 defines .progress and .progress-bar.
+       We use .progress-bar-bg as wrapper to avoid clash.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.progress-bar-bg {
+  background: #e3e3e3;
+  border-radius: 3px;
+  height: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+/* Override Bootstrap .progress-bar which adds striped animation */
+.progress-bar-bg .progress-bar {
+  background: #337ab7 !important;
+  background-image: none !important;
+  border-radius: 3px;
+  height: 6px;
+  transition: width 0.35s ease;
+  animation: none !important;
+  box-shadow: none !important;
+  float: none !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   25. TARIF CALCULATOR
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.calc-result-box {
+  background: #d9edf7;
+  border: 1px solid #bce8f1;
+  border-radius: 3px;
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.calc-main {
+  font-size: 24px;
+  font-weight: 700;
+  color: #31708f;
+  font-family: 'Roboto', sans-serif;
+}
+
+.calc-detail {
+  font-size: 12px;
+  color: #5a8a9f;
+  margin-top: 5px;
+  line-height: 1.7;
+  font-family: 'Roboto', sans-serif;
+}
+
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.method-card {
+  border: 1px solid #e3e3e3;
+  border-radius: 3px;
+  padding: 13px 15px;
+  background: #fff;
+  font-family: 'Roboto', sans-serif;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   26. LIVE GATE EVENT FEED (WebSocket panel)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.gate-event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f5f5f5;
+  font-family: 'Roboto', sans-serif;
+}
+.gate-event-row:last-child {
+  border-bottom: none;
+}
+
+.gate-event-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.gate-event-icon.entry { background: #337ab7; }
+.gate-event-icon.exit  { background: #5cb85c; }
+
+.gate-event-time {
+  font-size: 11px;
+  color: #aaa;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Connection status indicator */
+.ws-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-family: 'Roboto', sans-serif;
+}
+.ws-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ws-dot.connected    { background: #5cb85c; }
+.ws-dot.connecting   { background: #f0ad4e; }
+.ws-dot.disconnected { background: #d9534f; }
+.ws-dot.error        { background: #d9534f; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   27. UTILITY HELPERS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.text-muted-six {
+  color: #777;
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+}
+
+.divider-row {
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  margin: 10px 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   28. RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Large screens: restore Bootstrap container padding ── */
+@media (min-width: 1200px) {
+  .page {
+    padding: 28px 40px 60px;
+  }
+}
+
+/* ── Tablet (≤ 992px) ── */
+@media (max-width: 992px) {
+  .stat-grid    { grid-template-columns: repeat(2, 1fr); }
+  .method-grid  { grid-template-columns: repeat(2, 1fr); }
+
+  .status-big {
+    flex-direction: column;
+  }
+  .status-cell {
+    border-right: none;
+    border-bottom: 1px solid #e3e3e3;
+  }
+  .status-cell:last-child {
+    border-bottom: none;
+  }
+}
+
+/* ── Mobile (≤ 768px) ── */
+@media (max-width: 768px) {
+  .nav-brand  { padding-left: 14px; }
+  .user-btn   { padding-right: 14px; font-size: 12px; }
+
+  .page       { padding: 16px 14px 40px; }
+
+  .page > h1  { font-size: 22px; }
+
+  .stat-grid  { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .method-grid { grid-template-columns: 1fr; }
+
+  .tabs { overflow-x: auto; padding-bottom: 0; }
+  .tab  { padding: 8px 11px; font-size: 12.5px; }
+
+  .vehicle-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .v-actions {
+    justify-content: flex-start;
+  }
+
+  .form-row { flex-direction: column; align-items: stretch; }
+  .fg input,
+  .fg select { width: 100% !important; }
+
+  .total-row {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+}
+
+/* ── Small mobile (≤ 480px) ── */
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat-num  { font-size: 18px; }
+  .tab       { padding: 7px 9px; font-size: 12px; }
+  .plate     { font-size: 10px; letter-spacing: 1.5px; padding: 3px 8px; }
+}
