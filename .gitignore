@@ -1,0 +1,51 @@
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.pt          # YOLO model weights — download at runtime, never commit
+*.onnx
+
+# ── Secrets / environment ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+backend/.env
+anpr/.env
+!**/.env.example
+!**/.env.local.example
+
+# ── Node / Next.js ────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+frontend/.next/
+frontend/node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── Arduino / Firmware ────────────────────────────────────────────────────────
+firmware/**/*.bin
+firmware/**/*.elf
+firmware/**/build/
+firmware/**/.pio/
+
+# ── OS artifacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.suo
