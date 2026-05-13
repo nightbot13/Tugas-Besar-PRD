@@ -1,0 +1,14 @@
+# anpr/requirements.txt
+# Install with: pip install -r requirements.txt
+
+# Computer vision & ANPR
+ultralytics>=8.2.0
+fast-plate-ocr>=0.3.0
+opencv-python>=4.10.0
+
+# Async HTTP (non-blocking API trigger)
+aiohttp>=3.10.0
+
+# YOLO model download (Hugging Face)
+huggingface-hub>=0.24.0
+fast-plate-ocr[onnx]
