@@ -225,13 +225,25 @@ export function ParkingStatus({ token, totalVehicles }: ParkingStatusProps) {
 
 function GateStatusChips() {
   const [gates, setGates] = useState<string[]>([]);
+  const [lastUpdate, setLastUpdate] = useState<string>("");
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/gate/status`
+      );
+      const d = await res.json();
+      setGates(d.online_gates ?? []);
+      setLastUpdate(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    } catch { /* backend offline — keep last known state */ }
+  }, []);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/gate/status`)
-      .then((r) => r.json())
-      .then((d) => setGates(d.online_gates ?? []))
-      .catch(() => {});
-  }, []);
+    fetchStatus();
+    // Poll every 5 seconds — ESP32 WebSocket connects instantly when script starts
+    const id = setInterval(fetchStatus, 5_000);
+    return () => clearInterval(id);
+  }, [fetchStatus]);
 
   const allGates = [
     { id: "G1",    label: "Gerbang Masuk 1 — Parkir Mahasiswa" },
@@ -240,19 +252,35 @@ function GateStatusChips() {
   ];
 
   return (
-    <div className="gate-info">
-      {allGates.map((g) => (
-        <div key={g.id} className="gate-chip">
-          <strong>{g.id}</strong>
-          {g.label}
-          <span
-            className={`badge ${gates.includes(g.id) ? "badge-green" : "badge-red"}`}
-            style={{ marginLeft: 8 }}
-          >
-            {gates.includes(g.id) ? "Online" : "Offline"}
-          </span>
-        </div>
-      ))}
+    <div>
+      <div className="gate-info">
+        {allGates.map((g) => {
+          const online = gates.includes(g.id);
+          return (
+            <div key={g.id} className="gate-chip">
+              <strong>{g.id}</strong>
+              {g.label}
+              <span
+                className={`badge ${online ? "badge-green" : "badge-red"}`}
+                style={{ marginLeft: 8 }}
+              >
+                {online ? "● Online" : "○ Offline"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {lastUpdate && (
+        <p style={{ fontSize: 11, color: "#aaa", marginTop: 6, marginBottom: 0 }}>
+          Diperbarui otomatis setiap 5 detik · terakhir: {lastUpdate}
+        </p>
+      )}
+      <div className="alert alert-info" style={{ marginTop: 12, fontSize: 12 }}>
+        <strong>Cara kerja Status Gerbang:</strong> Setiap ESP32 yang terpasang di gerbang
+        menghubungkan diri ke backend via WebSocket saat menyala. Status <strong>Online</strong>{" "}
+        berarti ESP32 terhubung dan siap menerima perintah buka gerbang dari ANPR.{" "}
+        <strong>Offline</strong> berarti ESP32 belum menyala atau koneksi terputus.
+      </div>
     </div>
   );
 }

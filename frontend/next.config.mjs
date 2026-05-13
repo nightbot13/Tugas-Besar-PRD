@@ -1,12 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Serve the SIX ITB static CSS files from /public/css/
-  // Copy all uploaded CSS files into: frontend/public/css/
+  // Allow next/image to serve from the local public directory
+  images: {
+    unoptimized: true,   // serve PNG logos as-is (no CDN needed for campus LAN)
+  },
+
   async headers() {
     return [
       {
-        // Cache static SIX CSS assets aggressively
         source: "/css/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/img/:path*",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
@@ -14,8 +22,6 @@ const nextConfig = {
     ];
   },
 
-  // Proxy API requests to FastAPI during development
-  // so the browser never needs to know the backend port
   async rewrites() {
     return [
       {

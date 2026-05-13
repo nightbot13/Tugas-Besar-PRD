@@ -1,7 +1,7 @@
 /**
  * components/ui/LiveGateEvent.tsx
  * Real-time gate event feed via WebSocket.
- * Uses globals.css classes: .gate-event-row, .gate-event-icon, .ws-status, etc.
+ * Accepts optional onEvent callback so parent can refresh DB stats on new events.
  */
 "use client";
 
@@ -10,13 +10,14 @@ import type { GateEvent } from "@/lib/api";
 
 interface LiveGateEventProps {
   token: string | null;
+  onEvent?: (event: GateEvent) => void;
 }
 
 const WS_STATE_CONFIG = {
-  connected:    { label: "Live",           dotClass: "connected"    },
-  connecting:   { label: "Menghubungkan...", dotClass: "connecting"  },
-  disconnected: { label: "Terputus",       dotClass: "disconnected" },
-  error:        { label: "Error",          dotClass: "error"        },
+  connected:    { label: "Live",              dotClass: "connected"    },
+  connecting:   { label: "Menghubungkan...",  dotClass: "connecting"  },
+  disconnected: { label: "Terputus",          dotClass: "disconnected" },
+  error:        { label: "Error",             dotClass: "error"        },
 } as const;
 
 function formatTime(iso: string): string {
@@ -34,13 +35,11 @@ function formatDuration(secs?: number): string {
 
 function EventRow({ event }: { event: GateEvent }) {
   const isEntry = event.type === "gate_entry";
-
   return (
     <div className="gate-event-row">
       <div className={`gate-event-icon ${isEntry ? "entry" : "exit"}`}>
         {isEntry ? "▼" : "▲"}
       </div>
-
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
           <span className="plate" style={{ fontSize: 9, padding: "2px 7px", letterSpacing: "1.5px" }}>
@@ -61,37 +60,64 @@ function EventRow({ event }: { event: GateEvent }) {
               <strong style={{ color: "#3c763d" }}>
                 Rp{event.fee.toLocaleString("id-ID")}
               </strong>
-              {event.duration_secs !== undefined && ` (${formatDuration(event.duration_secs)})`}
+              {event.duration_secs !== undefined &&
+                ` (${formatDuration(event.duration_secs)})`}
             </>
           )}
         </div>
       </div>
-
       <div className="gate-event-time">{formatTime(event.timestamp)}</div>
     </div>
   );
 }
 
-export function LiveGateEvent({ token }: LiveGateEventProps) {
-  const { events, connectionState } = useGateEvents(token);
+export function LiveGateEvent({ token, onEvent }: LiveGateEventProps) {
+  const { events, connectionState } = useGateEvents(token, onEvent);
   const cfg = WS_STATE_CONFIG[connectionState];
+
+  // When token is null, WS won't connect — show clear explanation
+  if (!token) {
+    return (
+      <div className="panel" style={{ marginBottom: 18 }}>
+        <div className="panel-head">Feed Real-Time Gerbang</div>
+        <div className="panel-body">
+          <div className="alert alert-info" style={{ margin: 0, fontSize: 12 }}>
+            <strong>Feed Real-Time Gerbang</strong> menampilkan setiap kendaraan yang
+            masuk/keluar secara langsung saat ANPR mendeteksi plat nomor.
+            Untuk mengaktifkan, set <code>NEXT_PUBLIC_DASHBOARD_TOKEN</code> di{" "}
+            <code>frontend/.env.local</code>.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="panel" style={{ marginBottom: 18 }}>
-      <div className="panel-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div
+        className="panel-head"
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+      >
         <span>Feed Real-Time Gerbang</span>
         <span className="ws-status">
           <span className={`ws-dot ${cfg.dotClass}`} />
           {cfg.label}
         </span>
       </div>
-
-      <div className="panel-body" style={{ padding: "0 14px", maxHeight: 300, overflowY: "auto" }}>
+      <div className="panel-body" style={{ padding: "0 14px", maxHeight: 280, overflowY: "auto" }}>
         {events.length === 0 ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "#aaa", fontSize: 13 }}>
-            {connectionState === "connected"
-              ? "Menunggu aktivitas gerbang..."
-              : "Tidak terhubung ke server real-time."}
+          <div style={{ padding: "18px 0" }}>
+            <div style={{ textAlign: "center", color: "#aaa", fontSize: 13, marginBottom: 10 }}>
+              {connectionState === "connected"
+                ? "Menunggu aktivitas gerbang..."
+                : "Menghubungkan ke server..."}
+            </div>
+            {connectionState === "connected" && (
+              <div style={{ fontSize: 11, color: "#bbb", textAlign: "center", lineHeight: 1.6 }}>
+                Feed ini akan menampilkan aktivitas secara otomatis saat ANPR
+                mendeteksi plat nomor dan script <code>anpr_main.py</code> berjalan.
+              </div>
+            )}
           </div>
         ) : (
           events.map((ev, i) => <EventRow key={i} event={ev} />)

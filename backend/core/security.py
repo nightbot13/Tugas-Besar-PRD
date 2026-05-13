@@ -138,3 +138,41 @@ def create_dashboard_token(nim: str, settings: Settings) -> str:
         "exp": datetime.now(timezone.utc) + timedelta(hours=8),
     }
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def require_admin_token(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer_scheme)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> dict:
+    """
+    FastAPI dependency for admin-only endpoints (ANPR verification, etc.).
+    Only tokens with sub = 'parking_admin' are accepted.
+    """
+    payload = _decode_token(credentials.credentials, settings)
+    if payload.get("sub") != "parking_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: admin access required.",
+        )
+    return payload
+
+
+def create_admin_token(admin_id: str, settings: Settings) -> str:
+    """
+    Generate an admin JWT. Run once, store in backend .env as ADMIN_TOKEN.
+
+    Usage:
+        python -c "
+        from core.config import get_settings
+        from core.security import create_admin_token
+        print(create_admin_token('admin_parkir', get_settings()))
+        "
+    """
+    payload = {
+        "sub":      "parking_admin",
+        "admin_id": admin_id,
+        "iss":      "itb-parking-backend",
+        "iat":      datetime.now(timezone.utc),
+        "exp":      datetime.now(timezone.utc) + timedelta(days=365),
+    }
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)

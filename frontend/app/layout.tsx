@@ -23,9 +23,15 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIX — Parkir",
-  description: "ITB Jatinangor — Sistem Parkir ANPR",
-  viewport: "width=device-width, initial-scale=1",
+  title: "ANPR Parking Gate ITB",
+  description: "Sistem Parkir Pintar ITB Jatinangor",
+};
+
+// Pisahkan viewport ke sini:
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

@@ -14,6 +14,7 @@ from core.config import get_settings
 from core.database import get_redis, close_redis
 from routers.gate import router as gate_router
 from routers.vehicles import router as vehicles_router
+from routers.admin import router as admin_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -63,6 +64,7 @@ app.add_middleware(
 # ── HTTP Routes ───────────────────────────────────────────────────────────────
 app.include_router(gate_router,     prefix="/api/v1/gate",     tags=["Gate"])
 app.include_router(vehicles_router, prefix="/api/v1/vehicles", tags=["Vehicles"])
+app.include_router(admin_router,    prefix="/api/v1/admin",    tags=["Admin"])
 
 # ── WebSocket Routes ──────────────────────────────────────────────────────────
 app.include_router(gate_router, prefix="/ws", tags=["WebSocket"], include_in_schema=False)

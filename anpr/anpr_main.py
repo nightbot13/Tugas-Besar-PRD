@@ -196,9 +196,7 @@ try:
             if r.boxes is None or len(r.boxes) == 0:
                 continue
 
-            # Perbaikan Utama: Gunakan zip untuk iterasi koordinat dan confidence secara bersamaan
             for box_tensor, conf_tensor in zip(r.boxes.xyxy, r.boxes.conf):
-                # Konversi tensor ke tipe data python standar
                 x1, y1, x2, y2 = map(int, box_tensor.tolist())
                 yolo_conf = float(conf_tensor.item()) 
 
@@ -207,10 +205,30 @@ try:
                 if crop.shape[0] < MIN_BOX_H or crop.shape[1] < MIN_BOX_W:
                     continue  # Abaikan noise
 
-                # ── OCR ───────────────────────────────────────────────────────
+                # ── OCR (Versi Cerdas) ────────────────────────────────────────
                 prediction = ocr_model.run(crop)
-                raw_text   = getattr(prediction, "text", str(prediction))
-                text       = raw_text.upper().replace(" ", "")
+                
+                # Perbaikan Utama: Ambil teks langsung dari objek PlatePrediction
+                raw_text = ""
+                if isinstance(prediction, list) and len(prediction) > 0:
+                    # Ambil atribut 'plate' dari elemen pertama list
+                    raw_text = getattr(prediction[0], 'plate', str(prediction[0]))
+                else:
+                    raw_text = getattr(prediction, "text", getattr(prediction, "plate", str(prediction)))
+                
+                # Bersihkan karakter aneh (hanya sisakan huruf & angka)
+                clean_text = re.sub(r'[^A-Z0-9]', '', raw_text.upper())
+
+                # Ekstrak HANYA pola plat nomor, abaikan angka pajak di sekitarnya
+                plate_match = re.search(r"([A-Z]{1,2}\d{1,4}[A-Z]{1,3})", clean_text)
+                
+                if plate_match:
+                    text = plate_match.group(1) # Ambil bagian platnya saja
+                else:
+                    text = clean_text # Biarkan apa adanya jika tidak ketemu polanya
+
+                # Tampilkan log di terminal agar kita tahu hasil bacaan OCR
+                log.info("OCR Baca -> Raw: '%s' | Final: '%s'", raw_text, text)
 
                 box_color = (0, 0, 255)  # Merah (Default: Belum valid)
 

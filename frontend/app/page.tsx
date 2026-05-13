@@ -16,11 +16,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Navbar }        from "@/components/layout/Navbar";
 import { Breadcrumb }    from "@/components/layout/Breadcrumb";
 import { TabMenu, type TabId } from "@/components/parking/TabMenu";
-import { VehicleCard }   from "@/components/parking/VehicleCard";
+import { VehicleCard, type VehicleData } from "@/components/parking/VehicleCard";
 import { ParkingStatus } from "@/components/parking/ParkingStatus";
 import { HistoryTable }  from "@/components/parking/HistoryTable";
 import { TarifInfo }     from "@/components/parking/TarifInfo";
-import { vehicleApi, validatePlate, type Vehicle, type VehicleType } from "@/lib/api";
+import { vehicleApi, validatePlate, type VehicleType } from "@/lib/api";
 
 // ── Dev token — replace with real auth in production ─────────────────────────
 // Generate with: python -c "from core.security import create_dashboard_token; ..."
@@ -41,7 +41,7 @@ export default function ParkirPage() {
   const token = DEV_TOKEN;
 
   const [activeTab,    setActiveTab]    = useState<TabId>("kendaraan");
-  const [vehicles,     setVehicles]     = useState<Vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [vehiclesLoad, setVehiclesLoad] = useState(true);
   const [vehiclesErr,  setVehiclesErr]  = useState<string | null>(null);
 
@@ -130,7 +130,7 @@ export default function ParkirPage() {
 
       <Breadcrumb crumbs={[{ label: "SIX", href: "/" }, { label: "Parkir" }]} />
 
-      <div className="page">
+      <div className="page site-container">
         <h1>Parkir</h1>
         <p className="page-subtitle">ITB Jatinangor &mdash; Sistem Parkir ANPR</p>
 
@@ -172,11 +172,7 @@ export default function ParkirPage() {
                   key={v.plate_normalized}
                   vehicle={v}
                   token={token}
-                  onDeleted={handleDeleted}
-                  onEwalletOpen={(plate) => {
-                    // TODO: open e-wallet modal for this plate
-                    alert(`Kelola E-Wallet untuk ${plate} — fitur segera hadir.`);
-                  }}
+                  onUpdated={loadVehicles}
                 />
               ))}
             </div>

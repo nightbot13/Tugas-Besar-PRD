@@ -1,16 +1,40 @@
 /**
  * components/layout/Navbar.tsx
- * Pixel-accurate SIX ITB navbar built from the real portal source CSS.
  *
- * Real SIX differences vs. our previous version (observed from screenshot):
- *   • Background: #3d3d3d (slightly lighter than #2b2b2b)
- *   • "SIX" brand + home house icon (glyphicon-home via Font Awesome)
- *   • "Aplikasi ▾" "Menu ▾" "Semester X ▾" — Bootstrap dropdown caret style
- *   • Right side: "ID" "EN" plain text — no box, just color change
- *   • User: Bootstrap glyphicon-user circle + name + Bootstrap caret ▾
- *   • All text uses Roboto font
- *   • Height: ~50px (Bootstrap navbar default)
- *   • No border-bottom on the dark bar
+ * PIXEL-ACCURATE replica dari navbar asli SIX ITB.
+ * Dibangun langsung dari source HTML (struktur.html) yang diunggah.
+ *
+ * HTML asli SIX (disederhanakan):
+ * <nav class="navbar navbar-inverse navbar-fixed-top">
+ *   <div class="container">
+ *     <div class="navbar-header">
+ *       <a class="navbar-brand" href="...">SIX <i class="fa fa-home"></i></a>
+ *     </div>
+ *     <div class="navbar-collapse collapse">
+ *       <ul class="nav navbar-nav">
+ *         <li class="dropdown"><a>Aplikasi <span class="caret"></span></a></li>
+ *         <li class="dropdown"><a>Menu <span class="caret"></span></a></li>
+ *       </ul>
+ *       <ul class="nav navbar-nav navbar-right">
+ *         <li class="active"><a>ID</a></li>
+ *         <li><a>EN</a></li>
+ *         <li class="dropdown">
+ *           <a><span class="fa fa-user-circle-o fa-fw"></span> Muhammad Abduh <span class="caret"></span></a>
+ *         </li>
+ *       </ul>
+ *     </div>
+ *   </div>
+ * </nav>
+ *
+ * Bootstrap 3.3.7 .navbar-inverse values (dari bootstrap.min.css):
+ *   background-color: #222222
+ *   border-color: #080808
+ *   height: 50px
+ *   .navbar-brand: color #9d9d9d, font-size 18px, padding 15px 15px, font-weight 400
+ *   .navbar-nav > li > a: color #9d9d9d, padding 15px
+ *   .navbar-nav > li > a:hover: color #fff, background #080808
+ *   .navbar-nav > .active > a: color #fff, background #080808
+ *   .container: padding 0 15px, max-width 1170px di lg, margin auto
  */
 "use client";
 
@@ -19,175 +43,299 @@ import { useState } from "react";
 
 interface NavbarProps {
   userName?: string;
-  semester?: string;
   showSemester?: boolean;
+  semester?: string;
 }
 
 export function Navbar({
   userName = "Muhammad Abduh",
+  showSemester = false,
   semester = "Semester 2 - 2025/2026",
-  showSemester = true,
 }: NavbarProps) {
   const [lang, setLang] = useState<"ID" | "EN">("ID");
 
   return (
     <nav
+      className="navbar navbar-inverse"
       style={{
-        background: "#3d3d3d",
-        height: 50,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0",
         position: "sticky",
         top: 0,
         zIndex: 1030,
-        width: "100%",
-        flexShrink: 0,
-        fontFamily: "'Roboto', sans-serif",
+        marginBottom: 0,
+        /* Bootstrap .navbar-inverse exact values */
+        backgroundColor: "#222",
+        borderColor: "#080808",
+        borderRadius: 0,
+        border: "1px solid transparent",
+        borderBottomColor: "#080808",
+        minHeight: 50,
       }}
     >
-      {/* ── Left: Brand + nav items ── */}
-      <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
-
-        {/* SIX + home icon */}
-        <Link
-          href="/"
-          style={{
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 15,
-            padding: "0 16px",
-            height: 50,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            textDecoration: "none",
-            letterSpacing: 1,
-            fontFamily: "'Roboto', sans-serif",
-          }}
-        >
-          <span>SIX</span>
-          {/* Home icon — Font Awesome fa-home, same as real SIX */}
-          <i
-            className="fa fa-home"
-            style={{ fontSize: 14, opacity: 0.85, marginTop: 1 }}
-          />
-        </Link>
-
-        {/* Aplikasi */}
-        <NavBtn label="Aplikasi" />
-
-        {/* Menu */}
-        <NavBtn label="Menu" />
-
-        {/* Semester dropdown — shown only on sub-pages like the real SIX */}
-        {showSemester && <NavBtn label={semester} />}
-      </div>
-
-      {/* ── Right: ID/EN + user ── */}
-      <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
-
-        {/* Language toggle — plain text, no box */}
-        {(["ID", "EN"] as const).map((l) => (
-          <button
-            key={l}
-            type="button"
-            onClick={() => setLang(l)}
+      {/* Uses .site-container class — same as breadcrumb wrapper and .page */}
+      <div
+        className="site-container"
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          minHeight: 50,
+          /* Override site-container top/bottom padding for navbar */
+          paddingTop: 0,
+          paddingBottom: 0,
+        }}
+      >
+        {/* ── navbar-header: brand ── */}
+        <div className="navbar-header" style={{ display: "flex", alignItems: "center" }}>
+          <Link
+            href="/"
             style={{
-              background: "transparent",
-              border: "none",
-              color: lang === l ? "#fff" : "#aaa",
-              fontWeight: lang === l ? 700 : 400,
-              fontSize: 13,
-              padding: "0 10px",
+              /* Bootstrap .navbar-brand exact values */
+              float: "left",
+              padding: "15px 15px",
+              fontSize: 18,
+              lineHeight: "20px",
               height: 50,
-              cursor: "pointer",
+              /* .navbar-inverse .navbar-brand */
+              color: "#9d9d9d",
+              fontWeight: 400,          /* NOT bold — real SIX is font-weight normal */
               fontFamily: "'Roboto', sans-serif",
-              letterSpacing: 0.3,
-              transition: "color 0.12s",
-            }}
-          >
-            {l}
-          </button>
-        ))}
-
-        {/* Thin separator */}
-        <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.18)", margin: "0 4px" }} />
-
-        {/* User button — circle icon + name + caret */}
-        <button
-          type="button"
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "#ddd",
-            fontSize: 13,
-            padding: "0 18px 0 10px",
-            height: 50,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            cursor: "pointer",
-            fontFamily: "'Roboto', sans-serif",
-            transition: "color 0.12s",
-          }}
-        >
-          {/* Bootstrap glyphicon-user circle — real SIX uses this */}
-          <span
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: "50%",
-              border: "1.5px solid #aaa",
+              textDecoration: "none",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
+              gap: 5,
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.color = "#fff";
+              (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.color = "#9d9d9d";
             }}
           >
-            <i className="fa fa-user" style={{ fontSize: 11, color: "#bbb" }} />
-          </span>
-          <span>{userName}</span>
-          {/* Bootstrap dropdown caret */}
-          <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 1 }}>▾</span>
-        </button>
+            SIX
+            {/* fa-home — slightly larger for visibility */}
+            <i className="fa fa-home" style={{ fontSize: 18 }} />
+          </Link>
+        </div>
+
+        {/* ── navbar-collapse: nav items ── */}
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            alignItems: "stretch",
+          }}
+        >
+          {/* LEFT: Aplikasi, Menu, Semester */}
+          <ul
+            style={{
+              display: "flex",
+              alignItems: "stretch",
+              listStyle: "none",
+              margin: 0,
+              padding: 0,
+              flex: 1,
+            }}
+          >
+            <NavLi label="Aplikasi" />
+            <NavLi label="Menu" />
+            {showSemester && <NavLi label={semester} />}
+          </ul>
+
+          {/* RIGHT: ID, EN, User */}
+          <ul
+            style={{
+              display: "flex",
+              alignItems: "stretch",
+              listStyle: "none",
+              margin: 0,
+              padding: 0,
+              /* navbar-right floats right in Bootstrap */
+              marginLeft: "auto",
+            }}
+          >
+            {/* ID — active state: background #080808, color #fff */}
+            <li style={{ display: "flex", alignItems: "stretch" }}>
+              <button
+                type="button"
+                onClick={() => setLang("ID")}
+                style={{
+                  /* Bootstrap .navbar-nav > li > a */
+                  padding: "0 15px",
+                  lineHeight: "50px",
+                  height: 50,
+                  display: "flex",
+                  alignItems: "center",
+                  border: "none",
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 14,
+                  cursor: "pointer",
+                  textDecoration: "none",
+                  /* active = #fff on #080808, inactive = #9d9d9d on transparent */
+                  color: lang === "ID" ? "#fff" : "#9d9d9d",
+                  backgroundColor: lang === "ID" ? "#080808" : "transparent",
+                  transition: "background 0.1s, color 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  if (lang !== "ID") {
+                    (e.currentTarget as HTMLElement).style.color = "#fff";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "#080808";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (lang !== "ID") {
+                    (e.currentTarget as HTMLElement).style.color = "#9d9d9d";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                ID
+              </button>
+            </li>
+
+            {/* EN */}
+            <li style={{ display: "flex", alignItems: "stretch" }}>
+              <button
+                type="button"
+                onClick={() => setLang("EN")}
+                style={{
+                  padding: "0 15px",
+                  height: 50,
+                  display: "flex",
+                  alignItems: "center",
+                  border: "none",
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 14,
+                  cursor: "pointer",
+                  color: lang === "EN" ? "#fff" : "#9d9d9d",
+                  backgroundColor: lang === "EN" ? "#080808" : "transparent",
+                  transition: "background 0.1s, color 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  if (lang !== "EN") {
+                    (e.currentTarget as HTMLElement).style.color = "#fff";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "#080808";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (lang !== "EN") {
+                    (e.currentTarget as HTMLElement).style.color = "#9d9d9d";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                EN
+              </button>
+            </li>
+
+            {/* User dropdown — fa-user-circle-o + name + caret */}
+            <li style={{ display: "flex", alignItems: "stretch" }}>
+              <button
+                type="button"
+                style={{
+                  padding: "0 15px",
+                  height: 50,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  border: "none",
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 14,
+                  cursor: "pointer",
+                  color: "#9d9d9d",
+                  backgroundColor: "transparent",
+                  whiteSpace: "nowrap",
+                  transition: "background 0.1s, color 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = "#fff";
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "#080808";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = "#9d9d9d";
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                }}
+              >
+                {/*
+                  Real SIX uses: <span class="fa fa-user-circle-o fa-fw"></span>
+                  fa-user-circle-o = outlined user circle, fa-fw = fixed width
+                  This renders as a thin circle outline with user silhouette inside
+                */}
+                <i
+                  className="fa fa-user-circle-o fa-fw"
+                  style={{ fontSize: 16 }}
+                />
+                {userName}
+                {/* Bootstrap native <span class="caret"> */}
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 0,
+                    height: 0,
+                    marginLeft: 2,
+                    verticalAlign: "middle",
+                    borderTop: "4px dashed",
+                    borderRight: "4px solid transparent",
+                    borderLeft: "4px solid transparent",
+                  }}
+                />
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </nav>
   );
 }
 
-/** Reusable nav button matching real SIX "Aplikasi ▾" style */
-function NavBtn({ label }: { label: string }) {
+/**
+ * Single nav item — Bootstrap .navbar-nav > li > a
+ * Real SIX: color #9d9d9d, hover background #080808 color #fff
+ * Caret: Bootstrap <span class="caret"> = border-top dashed trick
+ */
+function NavLi({ label }: { label: string }) {
   return (
-    <button
-      type="button"
-      style={{
-        background: "transparent",
-        border: "none",
-        color: "#ddd",
-        fontSize: 13,
-        padding: "0 14px",
-        height: 50,
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        cursor: "pointer",
-        fontFamily: "'Roboto', sans-serif",
-        whiteSpace: "nowrap",
-        transition: "background 0.12s, color 0.12s",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)";
-        (e.currentTarget as HTMLButtonElement).style.color = "#fff";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-        (e.currentTarget as HTMLButtonElement).style.color = "#ddd";
-      }}
-    >
-      {label}
-      <span style={{ fontSize: 10, opacity: 0.65 }}>▾</span>
-    </button>
+    <li style={{ display: "flex", alignItems: "stretch" }}>
+      <button
+        type="button"
+        style={{
+          padding: "0 15px",
+          height: 50,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          border: "none",
+          fontFamily: "'Roboto', sans-serif",
+          fontSize: 14,
+          cursor: "pointer",
+          color: "#9d9d9d",
+          backgroundColor: "transparent",
+          whiteSpace: "nowrap",
+          transition: "background 0.1s, color 0.1s",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.color = "#fff";
+          (e.currentTarget as HTMLElement).style.backgroundColor = "#080808";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.color = "#9d9d9d";
+          (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+        }}
+      >
+        {label}
+        <span
+          style={{
+            display: "inline-block",
+            width: 0,
+            height: 0,
+            marginLeft: 2,
+            verticalAlign: "middle",
+            borderTop: "4px dashed",
+            borderRight: "4px solid transparent",
+            borderLeft: "4px solid transparent",
+          }}
+        />
+      </button>
+    </li>
   );
 }
