@@ -189,7 +189,7 @@ anpr-parking/
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           TOKEN TYPES                                        │
+│                           TOKEN TYPES                                       │
 ├──────────────────┬──────────────────┬───────────┬─────────────────────────  │
 │ Client           │ sub claim        │ TTL       │ Used by                   │
 ├──────────────────┼──────────────────┼───────────┼─────────────────────────  │
@@ -197,7 +197,7 @@ anpr-parking/
 │ Dashboard user   │ dashboard_user   │ 8 hours   │ routers/vehicles.py       │
 │ Admin (petugas)  │ parking_admin    │ 365 days  │ routers/admin.py ← NEW    │
 │ ESP32 gate unit  │ esp32_gate       │ 30 days   │ WS /ws/esp32/{gate_id}    │
-└──────────────────┴──────────────────┴───────────┴─────────────────────────  │
+└──────────────────┴──────────────────┴───────────┴───────────────────────────│
 ```
 
 **Admin credentials** (defined in `routers/admin.py` → `ADMIN_USERS`):
