@@ -9,23 +9,33 @@ anpr-parking/
 │
 ├── backend/                                 # FastAPI (Python 3.11+)
 │   ├── __init__.py
-│   ├── main.py                              # App entrypoint: CORS, lifespan, router registration
+│   ├── main.py                              # App entrypoint: CORS, lifespan, 3 router registrations
 │   ├── requirements.txt                     # fastapi, uvicorn, python-jose, redis, pydantic-settings
 │   ├── .env.example                         # Secret template → copy to .env
+│   ├── db.json                              # ← PERSISTENT STORAGE (auto-created on first run)
+│   │                                        #   Survives server restarts. Contains VEHICLE_DB.
+│   │                                        #   Written by save_vehicle_db() after every mutation.
+│   │                                        #   Add to .gitignore in production.
 │   │
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── config.py                        # Pydantic-settings: JWT keys, Redis URL, CORS, tokens
-│   │   ├── security.py                      # JWT encode/decode + 4 role dependencies:
-│   │   │                                    #   require_anpr_token     → sub: anpr_service
+│   │   ├── security.py                      # JWT encode/decode + 4 role-based dependencies:
+│   │   │                                    #   require_anpr_token      → sub: anpr_service
 │   │   │                                    #   require_dashboard_token → sub: dashboard_user
-│   │   │                                    #   require_admin_token    → sub: parking_admin  ← NEW
-│   │   │                                    #   verify_esp32_token     → sub: esp32_gate
-│   │   └── database.py                      # In-memory mock DB:
-│   │                                        #   VEHICLE_DB dict (plate → vehicle + ewallets)
-│   │                                        #   HISTORY_DB list (completed sessions)
-│   │                                        #   SUPPORTED_EWALLETS list
-│   │                                        #   Redis helpers: session, cooldown, balance deduction
+│   │   │                                    #   require_admin_token     → sub: parking_admin
+│   │   │                                    #   verify_esp32_token      → sub: esp32_gate
+│   │   │                                    # Token generators:
+│   │   │                                    #   create_anpr_service_token()
+│   │   │                                    #   create_esp32_gate_token()
+│   │   │                                    #   create_dashboard_token()
+│   │   │                                    #   create_admin_token()
+│   │   └── database.py                      # Two-tier storage:
+│   │                                        #   VEHICLE_DB dict  → backed by db.json (persistent)
+│   │                                        #   HISTORY_DB list  → in-memory (resets on restart)
+│   │                                        #   SUPPORTED_EWALLETS: GoPay, OVO, ShopeePay, Dana, LinkAja
+│   │                                        #   save_vehicle_db() → writes VEHICLE_DB to db.json
+│   │                                        #   Redis: session CRUD, cooldown, balance deduction on exit
 │   │
 │   ├── models/
 │   │   ├── __init__.py
@@ -35,152 +45,165 @@ anpr-parking/
 │   ├── routers/
 │   │   ├── __init__.py
 │   │   ├── gate.py                          # Gate trigger + WebSocket routes:
-│   │   │                                    #   POST /api/v1/gate/trigger      (ANPR token)
-│   │   │                                    #   GET  /api/v1/gate/history      (dashboard token)
-│   │   │                                    #   GET  /api/v1/gate/status       (public)
-│   │   │                                    #   WS   /ws/gate-events           (dashboard WS)
-│   │   │                                    #   WS   /ws/esp32/{gate_id}       (ESP32 WS)
+│   │   │                                    #   POST /api/v1/gate/trigger  (anpr_service token)
+│   │   │                                    #   GET  /api/v1/gate/history  (dashboard_user token) ← FIXED
+│   │   │                                    #   GET  /api/v1/gate/status   (public)
+│   │   │                                    #   WS   /ws/gate-events       (dashboard WS)
+│   │   │                                    #   WS   /ws/esp32/{gate_id}   (ESP32 WS)
 │   │   │
 │   │   ├── vehicles.py                      # Student vehicle CRUD + e-wallet management:
-│   │   │                                    #   GET    /api/v1/vehicles/              (list)
-│   │   │                                    #   POST   /api/v1/vehicles/              (add)
-│   │   │                                    #   DELETE /api/v1/vehicles/{plate}       (remove)
-│   │   │                                    #   GET    /api/v1/vehicles/sessions      (stats)
-│   │   │                                    #   POST   /api/v1/vehicles/{plate}/ewallet
-│   │   │                                    #   PUT    /api/v1/vehicles/{plate}/ewallet/{prov}/balance
-│   │   │                                    #   DELETE /api/v1/vehicles/{plate}/ewallet/{prov}
-│   │   │                                    #   PUT    /api/v1/vehicles/{plate}/ewallet/{prov}/primary
+│   │   │                                    #   GET    /api/v1/vehicles/                     (list)
+│   │   │                                    #   POST   /api/v1/vehicles/                     (add)
+│   │   │                                    #   DELETE /api/v1/vehicles/{plate}              (remove)
+│   │   │                                    #   GET    /api/v1/vehicles/sessions             (stats)
+│   │   │                                    #   POST   /api/v1/vehicles/{plate}/ewallet      (add)
+│   │   │                                    #   PUT    /api/v1/vehicles/{plate}/ewallet/{p}/balance
+│   │   │                                    #   DELETE /api/v1/vehicles/{plate}/ewallet/{p} (remove)
+│   │   │                                    #   PUT    /api/v1/vehicles/{plate}/ewallet/{p}/primary
+│   │   │                                    #   PUT    /api/v1/vehicles/{plate}/verify       (ANPR verify)
 │   │   │                                    #   All require: dashboard_user token
+│   │   │                                    #   All mutations call save_vehicle_db() immediately
 │   │   │
-│   │   └── admin.py                         # Admin-only routes (sub: parking_admin):   ← NEW
-│   │                                        #   POST /api/v1/admin/auth/token           (login)
+│   │   └── admin.py                         # Admin-only routes (parking_admin token):
+│   │                                        #   POST /api/v1/admin/auth/token           (login → JWT)
 │   │                                        #   GET  /api/v1/admin/vehicles             (all vehicles)
-│   │                                        #   POST /api/v1/admin/vehicles/{plate}/verify-anpr
-│   │                                        #   POST /api/v1/admin/vehicles/{plate}/unverify-anpr
+│   │                                        #   POST /api/v1/admin/vehicles/{p}/verify-anpr
+│   │                                        #   POST /api/v1/admin/vehicles/{p}/unverify-anpr
+│   │                                        #   Both verify/unverify call save_vehicle_db()
 │   │
 │   └── services/
 │       ├── __init__.py
-│       ├── gate_service.py                  # 5-step decision tree: confidence → cooldown →
-│       │                                    #   DB lookup → status → duplicate → open_gate
-│       │                                    #   Also: balance deduction on exit via close_session()
-│       └── ws_manager.py                    # WebSocket manager:
+│       ├── gate_service.py                  # Gate decision tree (5 steps):
+│       │                                    #   1. confidence ≥ 0.85 (OCR vote consistency)
+│       │                                    #   2. Redis cooldown check
+│       │                                    #   3. Plate exists in VEHICLE_DB
+│       │                                    #   4. anpr_verified == True  ← AUTHORITATIVE check
+│       │                                    #   5. status != "blocked"
+│       │                                    #   Entry: create Redis session
+│       │                                    #   Exit:  deduct e-wallet balance, archive to HISTORY_DB
+│       └── ws_manager.py                    # WebSocket connection manager:
 │                                            #   dashboard fan-out broadcast
 │                                            #   ESP32 per-gate command delivery
+│                                            #   GateStatusChips polls /gate/status every 5s
 │
 ├── frontend/                                # Next.js 14 (App Router, TypeScript)
 │   ├── package.json
 │   ├── tsconfig.json
-│   ├── next.config.ts                       # API proxy rewrites + CSS cache headers
+│   ├── next.config.ts                       # images: unoptimized, API proxy rewrites, cache headers
 │   ├── .env.local.example                   # Template → copy to .env.local
 │   │
 │   ├── app/
-│   │   ├── globals.css                      # SINGLE CSS SOURCE OF TRUTH:
+│   │   ├── globals.css                      # Single CSS source of truth:
+│   │   │                                    #   .site-container — shared alignment class used by
+│   │   │                                    #     Navbar inner div, Breadcrumb wrapper, .page div
+│   │   │                                    #     (padding: 20px, max-width: 1200px, margin: auto)
 │   │   │                                    #   @import Bootstrap 3.3.7, Roboto, Font Awesome 5
 │   │   │                                    #   Verbatim style-20200730.css rules (real SIX)
-│   │   │                                    #   Next.js layout fixes (cancel padding-top 70px)
 │   │   │                                    #   All parking component styles
-│   │   │                                    #   Responsive breakpoints (992px, 768px, 480px)
+│   │   │                                    #   Responsive: ≤992px, ≤768px, ≤480px
 │   │   │
-│   │   ├── layout.tsx                       # Root layout: import globals.css only, metadata
+│   │   ├── layout.tsx                       # Root layout: import globals.css, metadata
 │   │   ├── page.tsx                         # Root → redirect to /parkir
 │   │   │
 │   │   ├── parkir/
 │   │   │   └── page.tsx                     # Student parking dashboard:
 │   │   │                                    #   Fetches vehicles from backend on mount
-│   │   │                                    #   Add vehicle with live plate validation
-│   │   │                                    #   Delete vehicle via API
-│   │   │                                    #   Passes token to all child components
+│   │   │                                    #   Add vehicle with live Indonesian plate validation
+│   │   │                                    #   Delete vehicle (blocked if currently parked)
+│   │   │                                    #   Passes token down to all child components
 │   │   │
 │   │   ├── admin/
-│   │   │   └── page.tsx                     # Admin-only panel (URL: /admin):        ← NEW
-│   │   │                                    #   Login screen (username + password)
-│   │   │                                    #   Session stored in sessionStorage
-│   │   │                                    #   Vehicle table: all vehicles, all NIMs
-│   │   │                                    #   Search by plate / name / NIM / model
-│   │   │                                    #   Filter: Semua / Terverifikasi / Belum Diverifikasi
-│   │   │                                    #   Per-row ANPR verify / revoke with notes
-│   │   │                                    #   Stat cards: total, verified, unverified, parked
+│   │   │   └── page.tsx                     # Admin panel (URL: /admin):
+│   │   │                                    #   Login screen → POST /api/v1/admin/auth/token
+│   │   │                                    #   Session in sessionStorage (clears on tab close)
+│   │   │                                    #   Vehicle table: all vehicles, search, filter by ANPR
+│   │   │                                    #   Per-row: verify ANPR with notes / revoke
+│   │   │                                    #   Stat cards: total / verified / unverified / parked
 │   │   │
-│   │   └── api/
-│   │       └── auth/
-│   │           └── token/
-│   │               └── route.ts             # Next.js API route: issue dashboard JWT
+│   │   └── api/auth/token/route.ts          # Next.js API route: issue dashboard JWT
 │   │
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── Navbar.tsx                   # Pixel-accurate SIX navbar from struktur.html source:
-│   │   │   │                                #   background #222, Bootstrap .navbar-inverse values
-│   │   │   │                                #   SIX + fa-home brand (font-weight 400, not bold)
-│   │   │   │                                #   Aplikasi ▾ / Menu ▾ (color #9d9d9d, hover #080808)
-│   │   │   │                                #   ID (active: bg #080808 white) / EN toggle
-│   │   │   │                                #   fa-user-circle-o + name + Bootstrap caret
-│   │   │   └── Breadcrumb.tsx               # Bootstrap ol.breadcrumb inside .container wrapper
-│   │   │                                    #   padding 0 15px, separator »
+│   │   │   ├── Navbar.tsx                   # Pixel-accurate SIX navbar (from struktur.html source):
+│   │   │   │                                #   Uses .site-container for alignment
+│   │   │   │                                #   background #222, fa-home (font-size 18)
+│   │   │   │                                #   #9d9d9d text, #080808 on hover/active
+│   │   │   │                                #   fa-user-circle-o + Bootstrap caret
+│   │   │   └── Breadcrumb.tsx               # Bootstrap ol.breadcrumb:
+│   │   │                                    #   Uses .site-container wrapper (margin-top: 18px gap)
+│   │   │                                    #   border-radius 4px → "separate rectangle" look
+│   │   │                                    #   separator »
 │   │   │
 │   │   ├── parking/
-│   │   │   ├── TabMenu.tsx                  # 4-tab switcher (Kendaraan / Status / Riwayat / Tarif)
-│   │   │   ├── VehicleCard.tsx              # Vehicle row with full e-wallet management panel:
-│   │   │   │                                #   Add: GoPay, OVO, ShopeePay, Dana, LinkAja
-│   │   │   │                                #   Edit saldo (customizable, decreases on autodebit)
-│   │   │   │                                #   Set primary / remove e-wallet
-│   │   │   │                                #   ANPR status shown as read-only text (no button)
-│   │   │   │                                #   Delete blocks if vehicle currently parked
-│   │   │   ├── ParkingStatus.tsx            # Status tab: reads live data from backend sessions
-│   │   │   │                                #   GET /api/v1/vehicles/sessions → stat grid
-│   │   │   │                                #   Active session bar: plate, gate, time, duration, fee
-│   │   │   │                                #   Refreshes every 30s + on WebSocket gate event
-│   │   │   ├── HistoryTable.tsx             # Riwayat tab: fetches GET /api/v1/gate/history
-│   │   │   │                                #   Filter by plate + month, total biaya footer
-│   │   │   └── TarifInfo.tsx                # Tarif tab: interactive fee calculator + rate cards
+│   │   │   ├── TabMenu.tsx                  # 4-tab switcher
+│   │   │   ├── VehicleCard.tsx              # Vehicle row + full e-wallet panel:
+│   │   │   │                                #   Real PNG logos from /img/ewallet/
+│   │   │   │                                #   useMemo for addProvider (fixes stale state bug)
+│   │   │   │                                #   Badge: "Aktif" only if anpr_verified=true AND active
+│   │   │   │                                #   onUpdated: optional, guarded with typeof check
+│   │   │   ├── ParkingStatus.tsx            # Status tab:
+│   │   │   │                                #   session.primary_ewallet (fixed field name)
+│   │   │   │                                #   GateStatusChips polls every 5s
+│   │   │   ├── HistoryTable.tsx             # Riwayat tab: GET /api/v1/gate/history (dashboard token)
+│   │   │   └── TarifInfo.tsx                # Tarif tab: calculator + rate cards
 │   │   │
 │   │   └── ui/
-│   │       ├── Badge.tsx                    # Reusable pill badge (6 color variants)
-│   │       ├── PlateTag.tsx                 # Indonesian plate chip (sm/md/lg sizes)
-│   │       └── LiveGateEvent.tsx            # Real-time gate feed (WebSocket, auto-reconnect)
-│   │                                        #   onEvent callback → triggers ParkingStatus refresh
+│   │       ├── Badge.tsx
+│   │       ├── PlateTag.tsx
+│   │       └── LiveGateEvent.tsx            # Real-time gate feed:
+│   │                                        #   Shows "Menunggu aktivitas gerbang..." when empty
+│   │                                        #   null token → shows setup message
 │   │
 │   ├── hooks/
-│   │   ├── useGateEvents.ts                 # WS hook: /ws/gate-events, exponential backoff,
-│   │   │                                    #   onEvent callback for parent stat refresh
-│   │   └── useParkingHistory.ts             # SWR hook: polls GET /api/v1/gate/history every 60s
+│   │   ├── useGateEvents.ts                 # WS hook: exponential backoff, onEvent callback
+│   │   └── useParkingHistory.ts             # SWR hook: polls history every 60s
 │   │
 │   ├── lib/
-│   │   └── api.ts                           # Typed fetch wrapper + all API functions:
-│   │                                        #   vehicleApi.list / add / delete / sessions
-│   │                                        #   gateApi.getStatus / getHistory
-│   │                                        #   validatePlate() — Indonesian plate regex
-│   │                                        #   buildGateEventsWsUrl()
+│   │   └── api.ts                           # Typed fetch wrapper:
+│   │                                        #   ActiveSession.primary_ewallet (fixed field name)
+│   │                                        #   validatePlate() — Indonesian regex
+│   │                                        #   vehicleApi / gateApi / buildGateEventsWsUrl
 │   │
 │   └── public/
-│       └── css/                             # Static assets served at /css/* (no build step)
-│           ├── bootstrap.min.css            # Bootstrap 3.3.7
-│           ├── bootstrap-theme.min.css      # Bootstrap optional theme
-│           ├── roboto.css                   # Google Fonts Roboto (real SIX font file)
-│           ├── all.css                      # Font Awesome 5 Free (paths fixed: /webfonts/)
-│           ├── v4-shims.css                 # Font Awesome v4 shims
-│           ├── bootstrap-notifications.min.css
-│           ├── jquery-confirm.min.css
-│           ├── style-20200730.css           # Real SIX overrides (reference — rules in globals.css)
-│           └── six-parkir.css              # Legacy (superseded by globals.css — safe to delete)
+│       ├── css/                             # SIX portal static CSS (no build step)
+│       │   ├── bootstrap.min.css
+│       │   ├── bootstrap-theme.min.css
+│       │   ├── roboto.css
+│       │   ├── all.css                      # paths fixed: /webfonts/
+│       │   ├── v4-shims.css
+│       │   ├── bootstrap-notifications.min.css
+│       │   └── jquery-confirm.min.css
+│       ├── img/
+│       │   └── ewallet/                     # Real e-wallet logos (PNG, served at /img/ewallet/)
+│       │       ├── gopay.png
+│       │       ├── ovo.png
+│       │       ├── shopeepay.png
+│       │       ├── dana.png
+│       │       └── linkaja.png
+│       └── webfonts/                        # Font Awesome webfonts (fa-solid-900.woff2 etc.)
+│                                            # Download from FA 5.15.4 or use CDN fallback
 │
-├── anpr/                                    # ANPR Edge Script (runs on camera PC)
+├── anpr/                                    # ANPR Edge Script (Windows PowerShell / Python)
 │   ├── anpr_main.py                         # YOLOv8 + fast_plate_ocr, async HTTP via aiohttp
+│   │                                        #   load_dotenv() → reads .env automatically
+│   │                                        #   OCR-based confidence (vote consistency, NOT YOLO score)
+│   │                                        #   compute_ocr_confidence() → passes 0.0–1.0 to backend
+│   │                                        #   YOLO_MIN_CONF=0.25 (separate from backend threshold)
 │   │                                        #   Non-blocking: asyncio.run_coroutine_threadsafe()
-│   │                                        #   Local 5s cooldown + server-side Redis cooldown
-│   ├── requirements.txt                     # ultralytics, fast-plate-ocr, opencv-python, aiohttp
-│   └── .env.example                         # API_ENDPOINT, API_SECRET_KEY, GATE_ID, GATE_DIRECTION
+│   ├── requirements.txt                     # ultralytics, fast-plate-ocr, opencv-python, aiohttp,
+│   │                                        # python-dotenv  ← required for .env auto-loading
+│   └── .env                                 # API_ENDPOINT, API_SECRET_KEY (= ANPR_SERVICE_TOKEN),
+│                                            # CAMERA_INDEX, GATE_ID, GATE_DIRECTION
+│                                            # NO inline comments on value lines (breaks dotenv)
 │
 ├── firmware/
 │   └── esp32_gate/
-│       ├── esp32_gate.ino                   # ESP32 WebSocket gate controller (C++)
-│       │                                    #   esp_timer hardware relay (no delay())
-│       │                                    #   Auto-reconnect with exponential backoff
-│       │                                    #   Safety: relay closes if WS drops while open
-│       └── README.md                        # Wiring diagram, library list, flashing guide
+│       ├── esp32_gate.ino                   # ESP32 WebSocket gate controller
+│       └── README.md                        # Wiring, libraries, flashing guide
 │
 └── docs/
-    ├── SECURITY.md                          # Threat model, token types/TTLs, TLS setup
-    └── DEPLOYMENT.md                        # WSL2 step-by-step, VS Code workspace, supervisor
+    ├── SECURITY.md                          # Threat model, tokens, TLS, data persistence
+    └── DEPLOYMENT.md                        # Full setup guide (WSL2 backend + Windows ANPR)
 ```
 
 ---
@@ -188,97 +211,116 @@ anpr-parking/
 ## Role & Token Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           TOKEN TYPES                                       │
-├──────────────────┬──────────────────┬───────────┬───────────────────────────│
-│ Client           │ sub claim        │ TTL       │ Used by                   │
-├──────────────────┼──────────────────┼───────────┼───────────────────────────│
-│ ANPR script      │ anpr_service     │ 365 days  │ routers/gate.py trigger   │
-│ Dashboard user   │ dashboard_user   │ 8 hours   │ routers/vehicles.py       │
-│ Admin (petugas)  │ parking_admin    │ 365 days  │ routers/admin.py ← NEW    │
-│ ESP32 gate unit  │ esp32_gate       │ 30 days   │ WS /ws/esp32/{gate_id}    │
-└──────────────────┴──────────────────┴───────────┴───────────────────────────│
+┌──────────────────┬──────────────────┬───────────┬────────────────────────────────────┐
+│ Client           │ sub claim        │ TTL       │ Protected endpoints                 │
+├──────────────────┼──────────────────┼───────────┼────────────────────────────────────┤
+│ ANPR script      │ anpr_service     │ 365 days  │ POST /gate/trigger only             │
+│ Dashboard user   │ dashboard_user   │ 8 hours   │ /vehicles/* + GET /gate/history     │
+│ Admin (petugas)  │ parking_admin    │ 365 days  │ /admin/* only                       │
+│ ESP32 gate unit  │ esp32_gate       │ 30 days   │ WS /ws/esp32/{gate_id}              │
+└──────────────────┴──────────────────┴───────────┴────────────────────────────────────┘
 ```
 
-**Admin credentials** (defined in `routers/admin.py` → `ADMIN_USERS`):
+**Admin credentials** (in `routers/admin.py` → `ADMIN_USERS`):
 
-| Username | Password | Role |
-|---|---|---|
-| `admin` | `parkir2024` | Full admin |
-| `petugas` | `gerbang123` | Gate officer |
+| Username | Password |
+|---|---|
+| `admin` | `parkir2024` |
+| `petugas` | `gerbang123` |
 
 ---
 
-## ANPR Verification Flow
+## ANPR Gate Decision Tree
 
 ```
-Student registers vehicle → status: "inactive", anpr_verified: false
-         │
-         ▼
-  [/admin page — petugas login]
-  Petugas checks STNK physically at gate → clicks "Verifikasi ANPR"
-         │
-         ▼
-  POST /api/v1/admin/vehicles/{plate}/verify-anpr  (requires parking_admin JWT)
-         │
-         ▼
-  vehicle.anpr_verified = true, vehicle.status = "active"
-         │
-         ▼
-  ANPR script detects plate → backend lookup passes → gate opens automatically
+POST /api/v1/gate/trigger
+  ├─ 1. OCR confidence ≥ 0.85?          NO → low_confidence (gate holds)
+  ├─ 2. Redis cooldown active?           YES → cooldown (duplicate ignored)
+  ├─ 3. Plate in VEHICLE_DB?            NO → deny_access (unregistered)
+  ├─ 4. anpr_verified == True?          NO → deny_access (not verified by petugas)
+  ├─ 5. status == "blocked"?            YES → deny_access (explicitly banned)
+  └─ PASS → open_gate
+       ├─ Entry: create Redis session, broadcast WS event, send ESP32 command
+       └─ Exit:  deduct e-wallet balance, archive to HISTORY_DB, open gate
 ```
 
-Students **cannot** trigger this flow — the endpoint requires `parking_admin` JWT.
-The "Verifikasi ANPR" button does **not exist** in the student UI (`/parkir`).
-It only exists in the admin panel (`/admin`).
+**Important:** Step 4 checks `anpr_verified`, NOT `status`. A vehicle with
+`anpr_verified=True` opens the gate regardless of `status` field (unless blocked).
 
 ---
 
 ## E-Wallet & Balance Flow
 
 ```
-Student adds e-wallet (GoPay/OVO/ShopeePay/Dana/LinkAja)
-→ Sets initial balance (customizable anytime via "Edit Saldo")
-→ Marks one as Primary, one as Cadangan
+Add e-wallet via web (GoPay/OVO/ShopeePay/Dana/LinkAja)
+  → Set initial balance (customizable anytime via "Edit Saldo")
+  → Balance persisted in db.json via save_vehicle_db()
 
-On gate exit trigger:
-  gate_service.py → close_session()
-    → Try Primary e-wallet balance
+Gate exit trigger:
+  close_session() in database.py:
+    → Try Primary e-wallet: balance -= fee
     → If balance < fee: try Cadangan
     → If both fail: payment_method = "manual"
-    → Balance is permanently deducted in VEHICLE_DB
+    → save_vehicle_db() called → balance change persists to db.json
 ```
 
 ---
 
-## CSS Architecture
+## Confidence Architecture (ANPR)
 
 ```
-app/globals.css (imported by layout.tsx — the only CSS import)
-│
-├── @import /css/bootstrap.min.css          ← Bootstrap 3.3.7 base
-├── @import /css/bootstrap-theme.min.css
-├── @import /css/roboto.css                 ← Roboto font (real SIX font)
-├── @import /css/all.css                    ← Font Awesome 5 (/webfonts/ paths)
-├── @import /css/v4-shims.css
-├── @import /css/bootstrap-notifications.min.css
-├── @import /css/jquery-confirm.min.css
-│
-├── SIX base rules (verbatim from style-20200730.css)
-├── Next.js fixes (cancel padding-top: 70px from Bootstrap fixed-navbar)
-├── Navbar: #222 bg, #9d9d9d text, #080808 hover/active (Bootstrap .navbar-inverse)
-├── All parking component styles (.panel, .badge, .plate, .tab, .stat-grid…)
-└── Responsive: ≤992px, ≤768px, ≤480px
+YOLO score (0.3–0.7)      → "Is there a plate in this box?"
+                              Only used to filter noise (YOLO_MIN_CONF=0.25)
+
+OCR vote consistency      → "How sure are we of the plate text?"
+(0.0–1.0)                   = best_plate_count / len(history)
+                              Sent to backend as `confidence`
+                              Backend threshold: ≥ 0.85
+
+Example: 9/10 OCR readings agree → ocr_confidence = 0.90 → gate opens
 ```
 
-> **Font Awesome webfonts**: `all.css` needs binary files in `public/webfonts/`.
-> Download from FA 5.15.4 release or use CDN (see docs/DEPLOYMENT.md).
+---
+
+## Data Persistence
+
+```
+db.json (backend/) — written on every mutation, read on startup
+  ├── Vehicles added via web (/parkir) ✓
+  ├── E-wallets added/removed ✓
+  ├── Balance changes (autodebit + manual edit) ✓
+  ├── ANPR verifications (admin panel) ✓
+  └── ANPR revocations ✓
+
+NOT persisted (resets on server restart):
+  ├── HISTORY_DB (completed sessions) — use PostgreSQL for production
+  └── Redis sessions (active parking) — Redis is persistent if configured
+```
+
+---
+
+## CSS Alignment System
+
+```
+.site-container {                    ← single shared class
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+Used by:
+  Navbar inner div   → className="site-container"  (nav items align left edge)
+  Breadcrumb wrapper → className="site-container"  (breadcrumb aligns left edge)
+  Page content       → className="page site-container" (content aligns left edge)
+
+All three share one CSS rule → pixel-identical left edges on any screen width.
+```
 
 ---
 
 ## Quick Start
 
-### Backend
+### Backend (WSL2)
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
@@ -286,46 +328,41 @@ pip install -r requirements.txt
 cp .env.example .env          # fill JWT_SECRET_KEY, generate tokens
 sudo service redis-server start
 uvicorn main:app --reload --port 8000
-# Swagger UI (DEBUG=true): http://localhost:8000/docs
+# db.json created automatically on first vehicle add
 ```
 
-### Frontend
+### Frontend (WSL2)
 ```bash
 cd frontend
 npm install
-cp .env.local.example .env.local
+cp .env.local.example .env.local   # set NEXT_PUBLIC_DASHBOARD_TOKEN
 npm run dev
-# Student dashboard: http://localhost:3000/parkir
-# Admin panel:       http://localhost:3000/admin
+# Student: http://localhost:3000/parkir
+# Admin:   http://localhost:3000/admin
 ```
 
-### ANPR Script
-```bash
+### ANPR Script (Windows PowerShell)
+```powershell
 cd anpr
-python -m venv .venv && source .venv/bin/activate
+# Activate venv
+.\.venv\Scripts\Activate.ps1
+
+# Install dependencies (includes python-dotenv)
 pip install -r requirements.txt
-cp .env.example .env
-GATE_ID=G1 GATE_DIRECTION=entry python anpr_main.py
+
+# Create .env with NO inline comments
+# API_SECRET_KEY = same value as ANPR_SERVICE_TOKEN in backend/.env
+# Then just run:
+python anpr_main.py
 ```
 
-### ESP32 Firmware
-1. Open `firmware/esp32_gate/esp32_gate.ino` in Arduino IDE 2.x
-2. Set `WIFI_SSID`, `WIFI_PASSWORD`, `WS_URL` with ESP32 JWT
-3. Board: **ESP32 Dev Module** → Upload → Serial Monitor 115200 baud
-
----
-
-## Admin Panel Usage (`/admin`)
-
+### Admin Panel
 ```
-1. Navigate to http://localhost:3000/admin
-2. Login with: admin / parkir2024  (or petugas / gerbang123)
-3. Search vehicles by plate, name, NIM, or model
-4. Filter: Semua | Terverifikasi | Belum Diverifikasi
-5. Click "Verifikasi ANPR" on a vehicle → enter optional notes → confirm
-6. Status changes to "Aktif" + "Terverifikasi" immediately
-7. To revoke: click "Cabut Verifikasi" → vehicle returns to "Belum Aktif"
+1. http://localhost:3000/admin
+2. Login: admin / parkir2024
+3. Find vehicle → "Verifikasi ANPR" → gate now opens for that plate
 ```
+
 ### TOKEN
 1. JWT_SECRET_KEY : python -c "import secrets; print(secrets.token_hex(32))"
 Location : backend/.env
