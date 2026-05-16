@@ -45,13 +45,13 @@ export interface ActiveSession {
   model: string;
   vehicle_type: VehicleType;
   gate_id: string;
-  entry_time: string;       // ISO 8601
-  entry_ts: number;         // Unix timestamp
+  entry_time: string;
+  entry_ts: number;
   elapsed_secs: number;
-  duration_label: string;   // "6j 31m"
-  est_fee: number;          // IDR integer
-  est_fee_label: string;    // "Rp2.000"
-  ewallet: EWallet | null;
+  duration_label: string;
+  est_fee: number;
+  est_fee_label: string;
+  primary_ewallet: EWallet | null;  // matches backend field name exactly
 }
 
 export interface SessionStats {

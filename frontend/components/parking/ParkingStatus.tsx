@@ -162,7 +162,7 @@ export function ParkingStatus({ token, totalVehicles }: ParkingStatusProps) {
           {stats!.active_sessions.map((session) => {
             const fmt = formatEntryTime(session.entry_time);
             const dur = calcLiveDuration(session.entry_ts);
-            const ew  = session.ewallet;
+            const ew  = session.primary_ewallet;
             return (
               <div className="panel" key={session.plate_normalized} style={{ marginBottom: 18 }}>
                 <div className="panel-head">Sesi Aktif</div>

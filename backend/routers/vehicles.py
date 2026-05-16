@@ -10,7 +10,6 @@ Routes:
   PUT    /api/v1/vehicles/{plate}/ewallet/{provider}/balance → update balance
   DELETE /api/v1/vehicles/{plate}/ewallet/{provider} → remove e-wallet
   PUT    /api/v1/vehicles/{plate}/ewallet/{provider}/primary → set as primary
-  POST   /api/v1/vehicles/{plate}/verify-anpr  → mark ANPR as verified
 """
 import re
 import time
@@ -22,7 +21,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from core.database import (
     VEHICLE_DB, HISTORY_DB, SUPPORTED_EWALLETS,
-    get_active_session, _normalize,
+    get_active_session, _normalize, save_vehicle_db,
 )
 from core.security import require_dashboard_token
 
@@ -71,7 +70,42 @@ class UpdateBalanceRequest(BaseModel):
 
 
 class VerifyAnprRequest(BaseModel):
-    verified_by: str = Field(default="Petugas Parkir", description="Nama petugas yang memverifikasi")
+    verified_by: str = Field(default="Petugas Parkir")
+
+
+# ── PUT /api/v1/vehicles/{plate}/verify ──────────────────────────────────────
+@router.put("/{plate}/verify", summary="Verify ANPR for a vehicle")
+async def verify_anpr(
+    plate: str,
+    req: VerifyAnprRequest,
+    _: Annotated[dict, Depends(require_dashboard_token)] = None,
+) -> dict:
+    """
+    Mark a vehicle as ANPR-verified. Once verified, the gate_service will
+    open the gate when this plate is detected. Also auto-activates the vehicle
+    if it has at least one e-wallet connected.
+    """
+    key = _normalize(plate)
+    if key not in VEHICLE_DB:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Kendaraan tidak ditemukan.")
+
+    vehicle = VEHICLE_DB[key]
+    vehicle["anpr_verified"]    = True
+    vehicle["anpr_verified_by"] = req.verified_by
+    vehicle["anpr_verified_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Auto-activate if has e-wallet, otherwise stays inactive
+    # (inactive vehicles still pass the gate — status is informational,
+    #  anpr_verified is the authoritative gate access check)
+    if len(vehicle.get("ewallets", [])) > 0:
+        vehicle["status"] = "active"
+
+    return {
+        "message":       f"Kendaraan {vehicle['plate_raw']} berhasil diverifikasi oleh {req.verified_by}.",
+        "plate_raw":     vehicle["plate_raw"],
+        "anpr_verified": True,
+        "status":        vehicle["status"],
+    }
 
 
 # ── GET /api/v1/vehicles/ ─────────────────────────────────────────────────────
@@ -124,6 +158,7 @@ async def add_vehicle(
         "anpr_verified": False,
         "ewallets":     [],
     }
+    save_vehicle_db()
     return {"message": f"Kendaraan {fmt_plate(key)} berhasil didaftarkan.", "plate_raw": fmt_plate(key)}
 
 
@@ -139,6 +174,7 @@ async def delete_vehicle(
     if await get_active_session(key):
         raise HTTPException(status.HTTP_409_CONFLICT, detail=f"Kendaraan sedang parkir, tidak bisa dihapus.")
     del VEHICLE_DB[key]
+    save_vehicle_db()
     return {"message": f"Kendaraan {fmt_plate(key)} berhasil dihapus."}
 
 
@@ -222,10 +258,11 @@ async def add_ewallet(
     ewallets.append(new_ew)
     vehicle["ewallets"] = ewallets
 
-    # Activate vehicle if it was inactive (has e-wallet now)
+    # Only activate vehicle if BOTH e-wallet added AND ANPR is already verified.
     if vehicle["status"] == "inactive" and vehicle["anpr_verified"]:
         vehicle["status"] = "active"
 
+    save_vehicle_db()
     return {"message": f"{req.provider} berhasil dihubungkan.", "ewallet": new_ew}
 
 
@@ -247,6 +284,7 @@ async def update_balance(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"{provider} tidak terhubung.")
     
     ew["balance"] = req.balance
+    save_vehicle_db()
     return {"message": f"Saldo {provider} diperbarui.", "balance": req.balance}
 
 
@@ -273,6 +311,7 @@ async def remove_ewallet(
     if removed["is_primary"] and VEHICLE_DB[key]["ewallets"]:
         VEHICLE_DB[key]["ewallets"][0]["is_primary"] = True
 
+    save_vehicle_db()
     return {"message": f"{provider} berhasil dihapus."}
 
 
@@ -296,33 +335,47 @@ async def set_primary_ewallet(
     
     if not found:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"{provider} tidak ditemukan.")
-    
+
+    save_vehicle_db()
     return {"message": f"{provider} dijadikan e-wallet primer."}
 
 
-# ── POST /api/v1/vehicles/{plate}/verify-anpr ────────────────────────────────
-@router.post("/{plate}/verify-anpr")
+
+# ── PUT /api/v1/vehicles/{plate}/verify ──────────────────────────────────────
+class VerifyAnprRequest(BaseModel):
+    verified_by: str = Field(default="Petugas Parkir")
+
+
+@router.put("/{plate}/verify", summary="Verify ANPR for a vehicle (petugas only)")
 async def verify_anpr(
     plate: str,
     req: VerifyAnprRequest,
     _: Annotated[dict, Depends(require_dashboard_token)] = None,
 ) -> dict:
+    """
+    Mark a vehicle as ANPR-verified. After this, gate_service will open the gate
+    when this plate is detected by the ANPR camera.
+    Also auto-activates the vehicle if it has at least one e-wallet connected.
+    Persists to db.json immediately.
+    """
     key = _normalize(plate)
     if key not in VEHICLE_DB:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Kendaraan tidak ditemukan.")
-    
-    vehicle = VEHICLE_DB[key]
-    vehicle["anpr_verified"] = True
 
-    # Auto-activate if ANPR verified (regardless of e-wallet)
-    if vehicle["status"] == "inactive":
+    vehicle = VEHICLE_DB[key]
+    vehicle["anpr_verified"]    = True
+    vehicle["anpr_verified_by"] = req.verified_by
+    vehicle["anpr_verified_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Auto-activate if e-wallet present
+    if len(vehicle.get("ewallets", [])) > 0:
         vehicle["status"] = "active"
 
+    save_vehicle_db()
+
     return {
-        "message":     f"ANPR untuk {vehicle['plate_raw']} berhasil diverifikasi oleh {req.verified_by}.",
-        "plate_raw":   vehicle["plate_raw"],
+        "message":       f"Kendaraan {vehicle['plate_raw']} berhasil diverifikasi oleh {req.verified_by}.",
+        "plate_raw":     vehicle["plate_raw"],
         "anpr_verified": True,
-        "status":      vehicle["status"],
-        "verified_by": req.verified_by,
-        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "status":        vehicle["status"],
     }

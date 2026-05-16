@@ -15,7 +15,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 
 from core.config import get_settings, Settings
-from core.security import require_anpr_token, verify_esp32_token
+from core.security import require_anpr_token, require_dashboard_token, verify_esp32_token
 from models.gate import GateTriggerRequest, GateTriggerResponse
 from services.gate_service import process_gate_trigger, get_history
 from services.ws_manager import ws_manager
@@ -49,7 +49,7 @@ async def gate_trigger(
     summary="Parking session history",
 )
 async def parking_history(
-    _token_payload: Annotated[dict, Depends(require_anpr_token)],
+    _token_payload: Annotated[dict, Depends(require_dashboard_token)],
     limit: int = Query(default=50, le=200),
 ) -> list[dict]:
     return await get_history(limit=limit)

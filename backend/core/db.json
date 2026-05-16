@@ -1,0 +1,89 @@
+{
+  "D4321ITB": {
+    "plate_raw": "D 4321 ITB",
+    "nim": "2021184750",
+    "owner": "Muhammad Abduh",
+    "vehicle_type": "motor",
+    "model": "Honda Beat",
+    "status": "active",
+    "anpr_verified": true,
+    "ewallets": [
+      {
+        "provider": "GoPay",
+        "balance": 85000,
+        "masked_account": "0812****7890",
+        "is_primary": true
+      },
+      {
+        "provider": "OVO",
+        "balance": 120000,
+        "masked_account": "0856****1234",
+        "is_primary": false
+      },
+      {
+        "provider": "ShopeePay",
+        "balance": 100000,
+        "masked_account": "08xx-xxxx-xxxx",
+        "is_primary": false
+      },
+      {
+        "provider": "Dana",
+        "balance": 100000,
+        "masked_account": "08xx-xxxx-xxxx",
+        "is_primary": false
+      },
+      {
+        "provider": "LinkAja",
+        "balance": 100000,
+        "masked_account": "08xx-xxxx-xxxx",
+        "is_primary": false
+      }
+    ]
+  },
+  "D9876KW": {
+    "plate_raw": "D 9876 KW",
+    "nim": "2021184750",
+    "owner": "Muhammad Abduh",
+    "vehicle_type": "motor",
+    "model": "Yamaha NMAX",
+    "status": "active",
+    "anpr_verified": true,
+    "ewallets": [],
+    "anpr_verified_by": "Admin Parkir",
+    "anpr_verified_at": "2026-05-14T10:24:48.412724+00:00",
+    "anpr_notes": ""
+  },
+  "F6797OB": {
+    "plate_raw": "F 6797 OB",
+    "nim": "2021184750",
+    "owner": "Muhammad Abduh",
+    "vehicle_type": "motor",
+    "model": "ADV\\",
+    "status": "active",
+    "anpr_verified": true,
+    "ewallets": [
+      {
+        "provider": "GoPay",
+        "balance": 95000,
+        "masked_account": "08xx-xxxx-xxxx",
+        "is_primary": true
+      }
+    ],
+    "anpr_verified_by": "Admin Parkir",
+    "anpr_verified_at": "2026-05-14T10:28:23.975801+00:00",
+    "anpr_notes": ""
+  },
+  "B6716VRZ": {
+    "plate_raw": "B 6716 VRZ",
+    "nim": "2021184750",
+    "owner": "Muhammad Abduh",
+    "vehicle_type": "motor",
+    "model": "VARIO",
+    "status": "active",
+    "anpr_verified": true,
+    "ewallets": [],
+    "anpr_verified_by": "Admin Parkir",
+    "anpr_verified_at": "2026-05-14T11:37:51.341200+00:00",
+    "anpr_notes": ""
+  }
+}

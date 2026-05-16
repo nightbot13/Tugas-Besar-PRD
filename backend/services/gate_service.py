@@ -79,15 +79,29 @@ async def process_gate_trigger(req: GateTriggerRequest) -> GateTriggerResponse:
             timestamp=ts,
         )
 
-    # ── 4. Vehicle status check ───────────────────────────────────────────────
-    if vehicle.get("status") != "active":
-        logger.warning("[%s] Vehicle status: %s", plate, vehicle.get("status"))
+    # ── 4. ANPR verification check ────────────────────────────────────────────
+    # A vehicle must be ANPR-verified by a petugas before the gate opens.
+    # This is the authoritative access control — status field is secondary.
+    if not vehicle.get("anpr_verified", False):
+        logger.warning("[%s] Not ANPR-verified — access denied.", plate)
         await set_cooldown(plate)
         return GateTriggerResponse(
             action="deny_access",
             plate_number=plate,
             gate_id=req.gate_id,
-            reason=f"Vehicle access is {vehicle.get('status')}. Contact campus security.",
+            reason="Kendaraan belum diverifikasi ANPR oleh petugas. Hubungi pos parkir untuk verifikasi.",
+            timestamp=ts,
+        )
+
+    # ── 5. Vehicle status check (blocked = explicitly banned) ─────────────────
+    if vehicle.get("status") == "blocked":
+        logger.warning("[%s] Vehicle is blocked.", plate)
+        await set_cooldown(plate)
+        return GateTriggerResponse(
+            action="deny_access",
+            plate_number=plate,
+            gate_id=req.gate_id,
+            reason="Akses kendaraan diblokir. Hubungi keamanan kampus.",
             timestamp=ts,
         )
 

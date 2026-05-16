@@ -106,18 +106,10 @@ export function LiveGateEvent({ token, onEvent }: LiveGateEventProps) {
       </div>
       <div className="panel-body" style={{ padding: "0 14px", maxHeight: 280, overflowY: "auto" }}>
         {events.length === 0 ? (
-          <div style={{ padding: "18px 0" }}>
-            <div style={{ textAlign: "center", color: "#aaa", fontSize: 13, marginBottom: 10 }}>
-              {connectionState === "connected"
-                ? "Menunggu aktivitas gerbang..."
-                : "Menghubungkan ke server..."}
-            </div>
-            {connectionState === "connected" && (
-              <div style={{ fontSize: 11, color: "#bbb", textAlign: "center", lineHeight: 1.6 }}>
-                Feed ini akan menampilkan aktivitas secara otomatis saat ANPR
-                mendeteksi plat nomor dan script <code>anpr_main.py</code> berjalan.
-              </div>
-            )}
+          <div style={{ padding: "18px 0", textAlign: "center", color: "#aaa", fontSize: 13 }}>
+            {connectionState === "connected"
+              ? "Menunggu aktivitas gerbang..."
+              : "Menghubungkan ke server..."}
           </div>
         ) : (
           events.map((ev, i) => <EventRow key={i} event={ev} />)

@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from core.config import get_settings, Settings
-from core.database import VEHICLE_DB, get_active_session, _normalize
+from core.database import VEHICLE_DB, get_active_session, _normalize, save_vehicle_db
 from core.security import require_admin_token, create_admin_token
 
 router = APIRouter()
@@ -102,6 +102,8 @@ async def admin_verify_anpr(
     if vehicle["status"] == "inactive":
         vehicle["status"] = "active"
 
+    save_vehicle_db()
+
     return {
         "message":       f"ANPR {vehicle['plate_raw']} berhasil diverifikasi.",
         "plate_raw":     vehicle["plate_raw"],
@@ -127,6 +129,8 @@ async def admin_unverify_anpr(
     vehicle["anpr_verified_by"] = None
     vehicle["anpr_verified_at"] = None
     vehicle["status"]           = "inactive"
+
+    save_vehicle_db()
 
     return {
         "message":       f"Verifikasi ANPR {vehicle['plate_raw']} dicabut.",
