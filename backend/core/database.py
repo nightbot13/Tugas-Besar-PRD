@@ -1,20 +1,11 @@
 """
 core/database.py
-Two-tier storage:
-  • Redis    — active sessions + cooldown deduplication (fast, ephemeral)
-  • JSON file — vehicle registry that PERSISTS across server restarts
-
-The JSON file (db.json) is saved next to this file in backend/core/.
-Every write to VEHICLE_DB is immediately flushed to disk so that:
-  - Vehicles added via the web survive server restarts
-  - ANPR verifications done via admin panel survive restarts
-  - E-wallet connections and balances survive restarts
-
-HISTORY_DB (completed sessions) is kept in memory only — it resets on restart.
-In production, replace with PostgreSQL + asyncpg.
+Storage layers:
+  • Redis        — active sessions + cooldown (fast, ephemeral)
+  • db.json      — vehicle registry (persists across restarts)
+  • history.json — completed parking sessions (persists across restarts)
 """
 import json
-import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,97 +15,108 @@ import redis.asyncio as aioredis
 
 from .config import get_settings
 
-# ── Persistence path ──────────────────────────────────────────────────────────
-_DB_FILE = Path(__file__).parent / "db.json"
+# ── Persistence paths ─────────────────────────────────────────────────────────
+_DB_FILE      = Path(__file__).parent / "db.json"
+_HISTORY_FILE = Path(__file__).parent / "history.json"
 
 # ── E-wallet options ──────────────────────────────────────────────────────────
 SUPPORTED_EWALLETS = ["GoPay", "OVO", "ShopeePay", "Dana", "LinkAja"]
 
-# ── Default seed data (used ONLY when db.json does not exist yet) ─────────────
+# ── Gate ID → Location mapping ────────────────────────────────────────────────
+GATE_LOCATIONS: dict[str, str] = {
+    "G1":    "Parkir Mahasiswa",
+    "G2":    "Parkir Utama",
+}
+
+# ── Default seed data ─────────────────────────────────────────────────────────
 _DEFAULT_VEHICLES: dict[str, dict] = {
     "D4321ITB": {
-        "plate_raw":      "D 4321 ITB",
-        "nim":            "2021184750",
-        "owner":          "Muhammad Abduh",
-        "vehicle_type":   "motor",
-        "model":          "Honda Beat",
-        "status":         "active",
-        "anpr_verified":  True,
+        "plate_raw":     "D 4321 ITB",
+        "nim":           "2021184750",
+        "owner":         "Muhammad Abduh",
+        "vehicle_type":  "motor",
+        "model":         "Honda Beat",
+        "status":        "active",
+        "anpr_verified": True,
         "ewallets": [
-            {
-                "provider":       "GoPay",
-                "balance":        85000,
-                "masked_account": "0812****7890",
-                "is_primary":     True,
-            },
-            {
-                "provider":       "OVO",
-                "balance":        120000,
-                "masked_account": "0856****1234",
-                "is_primary":     False,
-            },
+            {"provider": "GoPay", "balance": 85000,  "masked_account": "0812****7890", "is_primary": True},
+            {"provider": "OVO",   "balance": 120000, "masked_account": "0856****1234", "is_primary": False},
         ],
     },
     "D9876KW": {
-        "plate_raw":      "D 9876 KW",
-        "nim":            "2021184750",
-        "owner":          "Muhammad Abduh",
-        "vehicle_type":   "motor",
-        "model":          "Yamaha NMAX",
-        "status":         "inactive",
-        "anpr_verified":  False,
-        "ewallets":       [],
+        "plate_raw":     "D 9876 KW",
+        "nim":           "2021184750",
+        "owner":         "Muhammad Abduh",
+        "vehicle_type":  "motor",
+        "model":         "Yamaha NMAX",
+        "status":        "inactive",
+        "anpr_verified": False,
+        "ewallets":      [],
     },
 }
 
 
-# ── Load or initialise VEHICLE_DB from disk ───────────────────────────────────
+# ── Vehicle DB ────────────────────────────────────────────────────────────────
 def _load_db() -> dict:
-    """Load vehicle DB from db.json, or create it from defaults."""
     if _DB_FILE.exists():
         try:
             with open(_DB_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return data
+                return json.load(f)
         except (json.JSONDecodeError, OSError) as e:
-            # Corrupted file — fall back to defaults and overwrite
             print(f"[DB] Warning: db.json corrupted ({e}), resetting to defaults.")
-
-    # First run — write defaults to disk
-    _save_db(_DEFAULT_VEHICLES)
+    _write_json(_DB_FILE, _DEFAULT_VEHICLES)
     return dict(_DEFAULT_VEHICLES)
 
 
-def _save_db(db: dict) -> None:
-    """Flush the entire VEHICLE_DB to db.json atomically."""
-    tmp = _DB_FILE.with_suffix(".tmp")
+def _write_json(path: Path, data) -> None:
+    """Atomic write via temp file → rename."""
+    tmp = path.with_suffix(".tmp")
     try:
         with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(db, f, ensure_ascii=False, indent=2)
-        tmp.replace(_DB_FILE)   # atomic rename
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        tmp.replace(path)
     except OSError as e:
-        print(f"[DB] Warning: could not save db.json: {e}")
+        print(f"[DB] Warning: could not write {path.name}: {e}")
 
 
-# ── Live in-memory vehicle registry ───────────────────────────────────────────
+# ── History DB ────────────────────────────────────────────────────────────────
+def _load_history() -> list:
+    if _HISTORY_FILE.exists():
+        try:
+            with open(_HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"[DB] Warning: history.json corrupted ({e}), starting fresh.")
+    return []
+
+
+# ── Live in-memory stores ─────────────────────────────────────────────────────
 VEHICLE_DB: dict[str, dict] = _load_db()
-
-# ── Session history (in-memory only, resets on restart) ───────────────────────
-HISTORY_DB: list[dict] = []
+HISTORY_DB: list[dict]      = _load_history()
 
 
-# ── Public save helper — call after every mutation ────────────────────────────
+# ── Public save helpers ───────────────────────────────────────────────────────
 def save_vehicle_db() -> None:
-    """Persist current VEHICLE_DB state to disk. Call after every write."""
-    _save_db(VEHICLE_DB)
+    """Persist VEHICLE_DB to disk. Call after every mutation."""
+    _write_json(_DB_FILE, VEHICLE_DB)
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+def save_history_db() -> None:
+    """Persist HISTORY_DB to disk. Call after every new completed session."""
+    _write_json(_HISTORY_FILE, HISTORY_DB)
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 def _normalize(plate: str) -> str:
     return plate.upper().replace(" ", "")
 
 
-# ── Redis client ───────────────────────────────────────────────────────────────
+def gate_location(gate_id: str) -> str:
+    """Return human-readable location for a gate ID."""
+    return GATE_LOCATIONS.get(gate_id, f"Gerbang {gate_id}")
+
+
+# ── Redis ─────────────────────────────────────────────────────────────────────
 _redis: Optional[aioredis.Redis] = None
 
 
@@ -139,7 +141,6 @@ async def close_redis():
         _redis = None
 
 
-# ── Redis helpers ──────────────────────────────────────────────────────────────
 async def check_cooldown(plate: str) -> bool:
     redis = await get_redis()
     return await redis.exists(f"cooldown:{_normalize(plate)}") == 1
@@ -161,12 +162,13 @@ async def create_session(plate: str, gate_id: str, confidence: float) -> dict:
     redis = await get_redis()
     settings = get_settings()
     session = {
-        "plate":      _normalize(plate),
-        "gate_id":    gate_id,
-        "confidence": confidence,
-        "entry_time": datetime.now(timezone.utc).isoformat(),
-        "entry_ts":   time.time(),
-        "status":     "active",
+        "plate":         _normalize(plate),
+        "gate_id":       gate_id,
+        "gate_location": gate_location(gate_id),
+        "confidence":    confidence,
+        "entry_time":    datetime.now(timezone.utc).isoformat(),
+        "entry_ts":      time.time(),
+        "status":        "active",
     }
     await redis.set(
         f"session:{_normalize(plate)}",
@@ -177,7 +179,7 @@ async def create_session(plate: str, gate_id: str, confidence: float) -> dict:
 
 
 async def close_session(plate: str) -> Optional[dict]:
-    """Close session, compute billing, deduct e-wallet balance, archive."""
+    """Close session, compute billing, deduct e-wallet, archive to history."""
     redis = await get_redis()
     session = await get_active_session(plate)
     if not session:
@@ -195,7 +197,7 @@ async def close_session(plate: str) -> Optional[dict]:
         else min(2000 + (duration_hours - 1) * 1000, 10000)
     )
 
-    # ── Deduct e-wallet balance ───────────────────────────────────────────────
+    # Deduct e-wallet balance (primary first, then backup)
     payment_method = "manual"
     paid_provider  = None
     ewallets       = vehicle.get("ewallets", [])
@@ -207,7 +209,6 @@ async def close_session(plate: str) -> Optional[dict]:
             paid_provider  = ew["provider"]
             break
 
-    # Persist balance change to disk
     if payment_method == "autodebit":
         save_vehicle_db()
 
@@ -218,10 +219,13 @@ async def close_session(plate: str) -> Optional[dict]:
         "fee":            fee,
         "payment_method": payment_method,
         "paid_provider":  paid_provider,
+        "gate_location":  session.get("gate_location", gate_location(session.get("gate_id", ""))),
         "status":         "completed",
     })
 
     HISTORY_DB.append(session)
+    save_history_db()   # ← persist history to disk
+
     await redis.delete(f"session:{_normalize(plate)}")
     return session
 

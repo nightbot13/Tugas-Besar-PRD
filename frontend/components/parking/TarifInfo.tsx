@@ -139,32 +139,55 @@ export function TarifInfo() {
       {/* ── Payment method info ────────────────────────────────────────── */}
       <div className="sec-title" style={{ marginTop: 8 }}>Metode Pembayaran</div>
       <div className="card">
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            {
-              label: "Autodebit E-Wallet (Direkomendasikan)",
-              badge: "badge-green",
-              desc: "Pembayaran otomatis saat kendaraan keluar via ANPR. Mendukung GoPay, OVO, Dana. Hubungkan e-wallet di tab Kendaraan Saya.",
-            },
-            {
-              label: "QRIS Manual",
-              badge: "badge-orange",
-              desc: "Scan QR code di gerbang keluar. Digunakan jika e-wallet tidak terhubung atau saldo tidak cukup.",
-            },
-            {
-              label: "Tunai (Manual Petugas)",
-              badge: "badge-gray",
-              desc: "Pembayaran tunai ke petugas parkir. Hanya tersedia di gerbang yang dijaga.",
-            },
-          ].map((m) => (
-            <div key={m.label} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <span className={`badge ${m.badge}`} style={{ marginTop: 2, whiteSpace: "nowrap" }}>
-                {m.label}
-              </span>
-              <span style={{ fontSize: 12, color: "#555" }}>{m.desc}</span>
-            </div>
-          ))}
-        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <tbody>
+            {[
+              {
+                label:    "Autodebit E-Wallet",
+                sub:      "Direkomendasikan",
+                subColor: "#27ae60",
+                badge:    "badge-green",
+                desc:     "Pembayaran otomatis saat kendaraan keluar via ANPR. Mendukung GoPay, OVO, ShopeePay, Dana, dan LinkAja. Saldo dikurangi otomatis — primer terlebih dahulu, lalu cadangan jika tidak cukup. Hubungkan e-wallet di tab Kendaraan Saya.",
+              },
+              {
+                label:    "QRIS Manual",
+                sub:      null as string | null,
+                subColor: null as string | null,
+                badge:    "badge-orange",
+                desc:     "Scan QR code di gerbang keluar. Digunakan jika e-wallet tidak terhubung atau saldo tidak mencukupi.",
+              },
+              {
+                label:    "Tunai (Manual Petugas)",
+                sub:      null as string | null,
+                subColor: null as string | null,
+                badge:    "badge-gray",
+                desc:     "Pembayaran tunai ke petugas parkir. Hanya tersedia di gerbang yang dijaga.",
+              },
+            ].map((m, i, arr) => (
+              <tr
+                key={m.label}
+                style={{ borderBottom: i < arr.length - 1 ? "1px solid #f0f0f0" : "none" }}
+              >
+                <td style={{ width: 200, paddingRight: 16, paddingTop: 10, paddingBottom: 10, verticalAlign: "top", whiteSpace: "nowrap" }}>
+                  {/* Tambahkan pembungkus inline-flex di sini */}
+                  <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
+                    <span className={`badge ${m.badge}`} style={{ fontSize: 11.5, fontWeight: 600 }}>
+                      {m.label}
+                    </span>
+                    {m.sub && (
+                      <div style={{ fontSize: 10.5, color: m.subColor ?? "#888", marginTop: 4, fontWeight: 600 }}>
+                        {m.sub}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td style={{ fontSize: 12.5, color: "#555", paddingTop: 10, paddingBottom: 10, verticalAlign: "top", lineHeight: 1.6 }}>
+                  {m.desc}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* ── ANPR info box ──────────────────────────────────────────────── */}

@@ -1,0 +1,47 @@
+[
+  {
+    "plate": "F6797OB",
+    "gate_id": "G2",
+    "gate_location": "Parkir Utama",
+    "confidence": 0.9,
+    "entry_time": "2026-05-16T12:41:44.744442+00:00",
+    "entry_ts": 1778935304.7456527,
+    "status": "completed",
+    "exit_time": "2026-05-16T12:43:22.369520+00:00",
+    "duration_secs": 97,
+    "duration_hours": 1,
+    "fee": 1000,
+    "payment_method": "autodebit",
+    "paid_provider": "GoPay"
+  },
+  {
+    "plate": "F6797OB",
+    "gate_id": "G1",
+    "gate_location": "Parkir Mahasiswa",
+    "confidence": 1.0,
+    "entry_time": "2026-05-16T13:07:40.205617+00:00",
+    "entry_ts": 1778936860.2056513,
+    "status": "completed",
+    "exit_time": "2026-05-16T13:08:27.549619+00:00",
+    "duration_secs": 47,
+    "duration_hours": 1,
+    "fee": 1000,
+    "payment_method": "autodebit",
+    "paid_provider": "GoPay"
+  },
+  {
+    "plate": "F6797OB",
+    "gate_id": "G2",
+    "gate_location": "Parkir Utama",
+    "confidence": 1.0,
+    "entry_time": "2026-05-16T13:10:11.765496+00:00",
+    "entry_ts": 1778937011.765523,
+    "status": "completed",
+    "exit_time": "2026-05-16T13:11:07.699049+00:00",
+    "duration_secs": 55,
+    "duration_hours": 1,
+    "fee": 1000,
+    "payment_method": "autodebit",
+    "paid_provider": "GoPay"
+  }
+]

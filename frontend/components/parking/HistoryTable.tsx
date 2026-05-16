@@ -8,15 +8,29 @@
 import { useEffect, useState } from "react";
 import type { Vehicle } from "@/lib/api";
 
+// Gate ID → readable location (mirrors backend GATE_LOCATIONS)
+const GATE_LABELS: Record<string, string> = {
+  G1:    "Parkir Mahasiswa",
+  G2:    "Parkir Utama",
+};
+
+function gateLabel(gate_id: string, gate_location?: string): string {
+  // Prefer gate_location from backend (already human-readable)
+  if (gate_location) return gate_location;
+  // Fallback to local map
+  return GATE_LABELS[gate_id];
+}
+
 interface HistoryRecord {
-  plate:         string;
-  gate_id:       string;
-  confidence:    number;
-  entry_time:    string;
-  exit_time?:    string;
+  plate:          string;
+  gate_id:        string;
+  gate_location?: string;  // set by backend create_session
+  confidence:     number;
+  entry_time:     string;
+  exit_time?:     string;
   duration_secs?: number;
-  fee?:          number;
-  status:        "active" | "completed";
+  fee?:           number;
+  status:         "active" | "completed";
 }
 
 interface HistoryTableProps {
@@ -127,7 +141,7 @@ export function HistoryTable({ token, vehicles }: HistoryTableProps) {
                 <tr>
                   <th>Tanggal / Waktu</th>
                   <th>Plat / ANPR</th>
-                  <th>Gerbang</th>
+                  <th>Lokasi</th>
                   <th>Durasi</th>
                   <th>Biaya</th>
                   <th>Status</th>
@@ -162,7 +176,11 @@ export function HistoryTable({ token, vehicles }: HistoryTableProps) {
                             ANPR {(r.confidence * 100).toFixed(0)}%
                           </span>
                         </td>
-                        <td>{r.gate_id}</td>
+                        <td>
+                          <div style={{ fontSize: 13 }}>
+                            {gateLabel(r.gate_id, r.gate_location)}
+                          </div>
+                        </td>
                         <td>
                           <span className={`badge ${r.status === "active" ? "badge-blue" : "badge-gray"}`}>
                             {fmtDur(r.duration_secs)}

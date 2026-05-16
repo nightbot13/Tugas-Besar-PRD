@@ -17,16 +17,16 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 // ── E-wallet metadata with real logo paths ────────────────────────────────────
 const EWALLET_OPTIONS = [
-  { name: "GoPay",     logo: "/img/ewallet/gopay.png",     fallbackColor: "#00aae4" },
-  { name: "OVO",       logo: "/img/ewallet/ovo.png",       fallbackColor: "#4c3494" },
-  { name: "ShopeePay", logo: "/img/ewallet/shopeepay.png", fallbackColor: "#f05024" },
-  { name: "Dana",      logo: "/img/ewallet/dana.png",      fallbackColor: "#108ee9" },
-  { name: "LinkAja",   logo: "/img/ewallet/linkaja.png",   fallbackColor: "#e82529" },
+  { name: "GoPay",     logo: "/img/ewallet/gopay.png",     bgColor: "#ffffff" },
+  { name: "OVO",       logo: "/img/ewallet/ovo-baru.png",       bgColor: "#ffffff" },
+  { name: "ShopeePay", logo: "/img/ewallet/shopeepay-baru.png", bgColor: "#ffffff" },
+  { name: "Dana",      logo: "/img/ewallet/dana-baru.png",      bgColor: "#ffffff" },
+  { name: "LinkAja",   logo: "/img/ewallet/linkaja-baru.png",   bgColor: "#ffffff" },
 ];
 
 function ewalletMeta(name: string) {
   return EWALLET_OPTIONS.find((e) => e.name === name)
-    ?? { name, logo: null, fallbackColor: "#888" };
+    ?? { name, logo: null as string | null, bgColor: "#888" };
 }
 
 // ── E-wallet logo component ───────────────────────────────────────────────────
@@ -43,10 +43,10 @@ function EwalletLogo({ name, size = 32 }: { name: string; size?: number }) {
           borderRadius: "50%",
           overflow: "hidden",
           flexShrink: 0,
+          background: meta.bgColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f5f5f5",
         }}
       >
         <Image
@@ -54,7 +54,11 @@ function EwalletLogo({ name, size = 32 }: { name: string; size?: number }) {
           alt={name}
           width={size}
           height={size}
-          style={{ objectFit: "cover", borderRadius: "50%" }}
+          style={{
+            objectFit: "cover",
+            width: "100%",
+            height: "100%",
+          }}
           onError={() => setImgError(true)}
         />
       </div>
@@ -68,7 +72,7 @@ function EwalletLogo({ name, size = 32 }: { name: string; size?: number }) {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: meta.fallbackColor,
+        background: meta.bgColor,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -311,7 +315,7 @@ export function VehicleCard({ vehicle, token, onUpdated }: VehicleCardProps) {
 
           {/* ── Existing e-wallets ── */}
           {vehicle.ewallets.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+            <div style={{ display: "flex", flexWrap: "nowrap", gap: 10, marginBottom: 14 }}>
               {vehicle.ewallets.map((ew) => {
                 const isEditingBalance = editBalanceProv === ew.provider;
                 return (
