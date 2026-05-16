@@ -12,3 +12,4 @@ aiohttp>=3.10.0
 # YOLO model download (Hugging Face)
 huggingface-hub>=0.24.0
 fast-plate-ocr[onnx]
+python-dotenv
